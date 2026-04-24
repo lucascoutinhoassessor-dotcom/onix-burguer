@@ -1,0 +1,27 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" rx="72" fill="#090909"/>
+  <circle cx="318" cy="204" r="176" fill="#C78A2C" fill-opacity="0.12"/>
+  <circle cx="920" cy="936" r="212" fill="#F3B562" fill-opacity="0.08"/>
+  <path d="M216 552C216 408.422 332.422 292 476 292H724C867.578 292 984 408.422 984 552V552H216V552Z" fill="#C57B19"/>
+  <path d="M254 534C254 429.066 339.066 344 444 344H756C860.934 344 946 429.066 946 534V534H254V534Z" fill="#F2B460"/>
+  <ellipse cx="404" cy="432" rx="24" ry="12" fill="#FFF1D9" fill-opacity="0.72"/>
+  <ellipse cx="538" cy="402" rx="18" ry="10" fill="#FFF1D9" fill-opacity="0.72"/>
+  <ellipse cx="626" cy="432" rx="22" ry="11" fill="#FFF1D9" fill-opacity="0.72"/>
+  <ellipse cx="748" cy="410" rx="18" ry="10" fill="#FFF1D9" fill-opacity="0.72"/>
+  <ellipse cx="820" cy="444" rx="18" ry="10" fill="#FFF1D9" fill-opacity="0.72"/>
+  <rect x="236" y="552" width="728" height="62" rx="31" fill="#4DAA37"/>
+  <path d="M242 606H958C958 653.496 919.496 692 872 692H328C280.504 692 242 653.496 242 606V606Z" fill="#F3D26A"/>
+  <rect x="224" y="664" width="752" height="116" rx="58" fill="#5B3117"/>
+  <path d="M222 748H978V788C978 871.947 909.947 940 826 940H374C290.053 940 222 871.947 222 788V748Z" fill="#C57B19"/>
+  <path d="M266 780H934V792C934 853.856 883.856 904 822 904H378C316.144 904 266 853.856 266 792V780Z" fill="#E6A445"/>
+  <rect x="320" y="618" width="74" height="28" rx="14" fill="#8B1C1C"/>
+  <rect x="430" y="628" width="96" height="24" rx="12" fill="#8B1C1C"/>
+  <rect x="570" y="620" width="78" height="26" rx="13" fill="#8B1C1C"/>
+  <rect x="690" y="630" width="90" height="22" rx="11" fill="#8B1C1C"/>
+  <rect x="806" y="620" width="70" height="24" rx="12" fill="#8B1C1C"/>
+  <path d="M330 562C370 574 394 588 420 614" stroke="#88C96B" stroke-width="14" stroke-linecap="round"/>
+  <path d="M542 566C586 580 614 596 650 626" stroke="#88C96B" stroke-width="14" stroke-linecap="round"/>
+  <path d="M752 566C798 578 832 596 866 628" stroke="#88C96B" stroke-width="14" stroke-linecap="round"/>
+  <rect x="136" y="1004" width="928" height="48" rx="24" fill="#000000" fill-opacity="0.28"/>
+  <text x="600" y="1086" fill="#F6EBDD" font-family="Arial, sans-serif" font-size="52" font-weight="700" text-anchor="middle" letter-spacing="10">ONIX BURGUER ARTESANAL</text>
+</svg>

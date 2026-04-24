@@ -1,0 +1,20 @@
+<svg width="800" height="560" viewBox="0 0 800 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="560" rx="40" fill="#0C0C0C"/>
+  <circle cx="160" cy="130" r="90" fill="#F3B562" fill-opacity="0.08"/>
+  <ellipse cx="400" cy="434" rx="214" ry="40" fill="#000000" fill-opacity="0.24"/>
+  <path d="M290 362C290 301.249 339.249 252 400 252C460.751 252 510 301.249 510 362V392H290V362Z" fill="#5C2D16"/>
+  <path d="M262 246C262 181.383 314.383 129 379 129H421C485.617 129 538 181.383 538 246V252H262V246Z" fill="#8A4B28"/>
+  <path d="M262 246C262 181.383 314.383 129 379 129H421C485.617 129 538 181.383 538 246V252H262V246Z" fill="url(#paint0_linear_0_1)" fill-opacity="0.35"/>
+  <ellipse cx="398" cy="132" rx="80" ry="36" fill="#FFF5E6"/>
+  <path d="M328 204C356 184 378 170 402 164C432 156 454 168 476 194" stroke="#FFF5E6" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="452" cy="148" r="10" fill="#E6A445"/>
+  <circle cx="370" cy="154" r="9" fill="#E6A445"/>
+  <circle cx="416" cy="128" r="8" fill="#E6A445"/>
+  <text x="400" y="508" fill="#F6EBDD" font-family="Arial, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="6">DESSERTS TO FINISH STRONG</text>
+  <defs>
+    <linearGradient id="paint0_linear_0_1" x1="400" y1="129" x2="400" y2="252" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3B562"/>
+      <stop offset="1" stop-color="#F3B562" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
