@@ -79,7 +79,7 @@ export default function Home() {
         </video>
 
         {/* Dark overlay for text legibility */}
-        <div className="absolute inset-0 bg-black/60" aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/65" aria-hidden="true" />
 
         {/* Radial gradient overlay to preserve brand feel */}
         <div
@@ -92,54 +92,54 @@ export default function Home() {
         />
 
         {/* Content */}
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-20 pt-24 sm:px-6 lg:px-8 lg:pb-28 lg:pt-28">
-          <div className="max-w-3xl space-y-8">
-            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-amberglow/20 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.35em] text-amberglow backdrop-blur-sm">
-              <span className="h-2 w-2 rounded-full bg-amberglow" />
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8 lg:pb-28 lg:pt-28">
+          <div className="max-w-3xl space-y-6 sm:space-y-8">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amberglow/20 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.25em] text-amberglow backdrop-blur-sm sm:gap-3 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.35em]">
+              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amberglow sm:h-2 sm:w-2" />
               Premium burger experience
             </div>
 
-            <div className="space-y-6">
-              <h1 className="font-title max-w-3xl text-6xl uppercase leading-[0.88] tracking-[0.08em] text-cream sm:text-7xl lg:text-[7.5rem]">
+            <div className="space-y-4 sm:space-y-6">
+              <h1 className="font-title max-w-3xl text-[2.75rem] uppercase leading-[0.9] tracking-[0.06em] text-cream sm:text-6xl sm:leading-[0.88] sm:tracking-[0.08em] lg:text-[7.5rem]">
                 O sabor que transforma a sua noite em ritual.
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-white/80 sm:text-xl">
+              <p className="max-w-2xl text-sm leading-7 text-white/80 sm:text-lg sm:leading-8 lg:text-xl">
                 Hamburgueria premium de São Gonçalo com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.
               </p>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
               <Link
                 href="https://wa.me/5521965565600"
                 target="_blank"
                 rel="noreferrer"
-                className="btn-premium rounded-full bg-amberglow px-7 py-4 text-center text-sm font-semibold uppercase tracking-[0.2em] text-obsidian hover:bg-[#ffcb7d]"
+                className="btn-premium rounded-full bg-amberglow px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-obsidian hover:bg-[#ffcb7d] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
               >
                 Fazer pedido agora
               </Link>
               <Link
                 href="#cardapio"
-                className="btn-premium rounded-full border border-white/20 px-7 py-4 text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur-sm hover:border-amberglow/40 hover:text-amberglow"
+                className="btn-premium rounded-full border border-white/20 px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm hover:border-amberglow/40 hover:text-amberglow sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
               >
                 Ver destaques
               </Link>
             </div>
 
-            <div className="grid gap-4 pt-4 sm:grid-cols-3">
-              <div className="glass-panel rounded-3xl p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/45">Avaliação</p>
-                <p className="mt-3 font-title text-4xl uppercase tracking-[0.12em] text-cream">5.0</p>
-                <p className="text-sm text-white/60">1.343 avaliações reais</p>
+            <div className="grid grid-cols-3 gap-2 pt-2 sm:gap-4 sm:pt-4">
+              <div className="glass-panel rounded-2xl p-3 sm:rounded-3xl sm:p-5">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/45 sm:text-xs sm:tracking-[0.3em]">Avaliação</p>
+                <p className="mt-2 font-title text-2xl uppercase tracking-[0.08em] text-cream sm:mt-3 sm:text-4xl sm:tracking-[0.12em]">5.0</p>
+                <p className="text-[10px] text-white/60 sm:text-sm">1.343 avaliações</p>
               </div>
-              <div className="glass-panel rounded-3xl p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/45">Faixa</p>
-                <p className="mt-3 font-title text-4xl uppercase tracking-[0.12em] text-cream">R$ 20–60</p>
-                <p className="text-sm text-white/60">Opções premium e acessíveis</p>
+              <div className="glass-panel rounded-2xl p-3 sm:rounded-3xl sm:p-5">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/45 sm:text-xs sm:tracking-[0.3em]">Faixa</p>
+                <p className="mt-2 font-title text-2xl uppercase tracking-[0.08em] text-cream sm:mt-3 sm:text-4xl sm:tracking-[0.12em]">R$20–60</p>
+                <p className="text-[10px] text-white/60 sm:text-sm">Premium e acessível</p>
               </div>
-              <div className="glass-panel rounded-3xl p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/45">Funcionamento</p>
-                <p className="mt-3 font-title text-4xl uppercase tracking-[0.12em] text-cream">18h</p>
-                <p className="text-sm text-white/60">Atendimento todos os dias</p>
+              <div className="glass-panel rounded-2xl p-3 sm:rounded-3xl sm:p-5">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/45 sm:text-xs sm:tracking-[0.3em]">Abre</p>
+                <p className="mt-2 font-title text-2xl uppercase tracking-[0.08em] text-cream sm:mt-3 sm:text-4xl sm:tracking-[0.12em]">18h</p>
+                <p className="text-[10px] text-white/60 sm:text-sm">Todos os dias</p>
               </div>
             </div>
           </div>

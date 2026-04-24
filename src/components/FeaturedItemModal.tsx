@@ -152,11 +152,11 @@ export function FeaturedItemsSection() {
 
       {activeItem ? (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-6"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/75 sm:items-center sm:px-4 sm:py-6"
           onClick={closeModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[2rem] border border-white/10 bg-[#0a0a0a] shadow-amber"
+            className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0a0a0a] shadow-amber sm:max-h-[90vh] sm:max-w-xl sm:rounded-[2rem]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image */}
@@ -166,7 +166,7 @@ export function FeaturedItemsSection() {
                 alt={activeItem.name}
                 width={640}
                 height={400}
-                className="h-64 w-full object-cover sm:h-72"
+                className="h-52 w-full object-cover sm:h-64 lg:h-72"
               />
               <button
                 type="button"
@@ -184,15 +184,15 @@ export function FeaturedItemsSection() {
             </div>
 
             {/* Header */}
-            <div className="border-b border-white/10 px-5 py-5 sm:px-6">
+            <div className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
               <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Destaque da casa</p>
-              <h2 className="mt-2 font-title text-4xl uppercase tracking-[0.08em] text-cream">{activeItem.name}</h2>
-              <p className="mt-3 text-sm leading-7 text-white/60">{activeItem.description}</p>
+              <h2 className="mt-2 font-title text-3xl uppercase tracking-[0.06em] text-cream sm:text-4xl sm:tracking-[0.08em]">{activeItem.name}</h2>
+              <p className="mt-2 text-sm leading-7 text-white/60 sm:mt-3">{activeItem.description}</p>
             </div>
 
             {/* Options */}
             {(activeItem.optionGroups ?? []).length > 0 ? (
-              <div className="space-y-4 px-5 py-5 sm:px-6">
+              <div className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
                 <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Personalize seu pedido</p>
                 {(activeItem.optionGroups ?? []).map((group) => {
                   const selectedIds = selection[group.id] ?? [];
@@ -222,7 +222,7 @@ export function FeaturedItemsSection() {
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectionChange(group, option.id)}
-                              className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                              className={`flex items-center justify-between rounded-2xl border px-3 py-3 text-left transition sm:px-4 ${
                                 isSelected
                                   ? "border-amberglow/60 bg-amberglow/10"
                                   : "border-white/10 bg-black/20 hover:border-amberglow/30"
@@ -234,7 +234,7 @@ export function FeaturedItemsSection() {
                                   {group.type === "single" ? "Seleção única" : "Adicional"}
                                 </p>
                               </div>
-                              <div className="text-right">
+                              <div className="ml-3 flex-shrink-0 text-right">
                                 <p className="text-sm text-amberglow">
                                   {option.price ? `+${formatCurrency(option.price)}` : "Incluso"}
                                 </p>
@@ -253,11 +253,11 @@ export function FeaturedItemsSection() {
             ) : null}
 
             {/* Footer */}
-            <div className="border-t border-white/10 px-5 py-5 sm:px-6">
-              <div className="flex items-center justify-between">
+            <div className="border-t border-white/10 px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.25em] text-white/45">Total do item</p>
-                  <p className="font-title text-4xl uppercase tracking-[0.08em] text-amberglow">
+                  <p className="font-title text-3xl uppercase tracking-[0.06em] text-amberglow sm:text-4xl sm:tracking-[0.08em]">
                     {formatCurrency(modalTotal)}
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export function FeaturedItemsSection() {
                   type="button"
                   onClick={handleConfirmAdd}
                   disabled={!canConfirm}
-                  className="btn-premium rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
+                  className="btn-premium w-full rounded-full bg-amberglow px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.2em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35 sm:w-auto sm:py-4"
                 >
                   Adicionar ao carrinho
                 </button>
