@@ -222,7 +222,7 @@ export const menuItems: MenuItem[] = [
     description: "Blend 180g, cebola roxa na chapa, queijo suíço e molho de alho assado.",
     price: 37,
     category: "hamburgueres",
-    image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500&q=80",
+    image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80",
     optionGroups: [
       {
         id: "ponto-carne",
