@@ -283,24 +283,43 @@ export function MenuPageClient() {
       </main>
 
       {selectedItem ? (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 sm:items-center sm:px-4 sm:py-6">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0a0a0a] shadow-amber sm:max-h-full sm:max-w-2xl sm:rounded-[2rem]">
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Personalizar item</p>
-                <h2 className="mt-2 font-title text-3xl uppercase tracking-[0.06em] text-cream sm:text-4xl sm:tracking-[0.08em]">{selectedItem.name}</h2>
-                <p className="mt-2 text-sm leading-7 text-white/60 sm:mt-3">{selectedItem.description}</p>
-              </div>
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/75 sm:items-center sm:px-4 sm:py-6"
+          onClick={() => { setSelectedItem(null); setSelection({}); }}
+        >
+          <div
+            className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0a0a0a] shadow-amber sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Product Image */}
+            <div className="relative overflow-hidden rounded-t-[2rem] bg-[#0f0f0f]">
+              <Image
+                src={selectedItem.image}
+                alt={selectedItem.name}
+                width={640}
+                height={400}
+                className="h-52 w-full object-cover sm:h-64 lg:h-72"
+              />
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedItem(null);
-                  setSelection({});
-                }}
-                className="flex-shrink-0 rounded-full border border-white/10 px-3 py-2 text-xs uppercase tracking-[0.3em] text-white/65 transition hover:border-amberglow/40 hover:text-amberglow"
+                onClick={() => { setSelectedItem(null); setSelection({}); }}
+                aria-label="Fechar"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white/80 backdrop-blur-sm transition hover:bg-black/80 hover:text-amberglow"
               >
-                Fechar
+                ✕
               </button>
+              <div className="absolute bottom-4 left-4">
+                <span className="rounded-full bg-amberglow px-4 py-2 text-sm font-semibold text-obsidian">
+                  {formatCurrency(selectedItem.price)}
+                </span>
+              </div>
+            </div>
+
+            {/* Header */}
+            <div className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Personalizar item</p>
+              <h2 className="mt-2 font-title text-3xl uppercase tracking-[0.06em] text-cream sm:text-4xl sm:tracking-[0.08em]">{selectedItem.name}</h2>
+              <p className="mt-2 text-sm leading-7 text-white/60 sm:mt-3">{selectedItem.description}</p>
             </div>
 
             <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
