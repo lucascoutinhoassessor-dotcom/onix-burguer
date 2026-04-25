@@ -490,7 +490,10 @@ export default function LoginClientePage() {
                     </div>
                   )}
                   <button
-                    onClick={() => changeView("reset")}
+                    onClick={() => {
+                      if (forgotCode) setResetCode(forgotCode);
+                      changeView("reset");
+                    }}
                     className="w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d]"
                   >
                     Inserir código
@@ -549,6 +552,9 @@ export default function LoginClientePage() {
                     maxLength={6}
                     className={`${inputCls} text-center text-2xl tracking-[0.5em]`}
                   />
+                  {forgotCode && resetCode === forgotCode && (
+                    <p className="mt-1 text-center text-xs text-amberglow/60">Código preenchido automaticamente</p>
+                  )}
                 </label>
 
                 <label className="block">
