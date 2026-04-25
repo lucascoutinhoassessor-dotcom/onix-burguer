@@ -120,49 +120,6 @@ const NAV_ITEMS = [
 ];
 
 // ---------------------------------------------------------------------------
-// iFood-style loud bell sound via Web Audio API
-// ---------------------------------------------------------------------------
-function playIFoodBell() {
-  try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
-
-    // Master gain + compressor for loudness
-    const compressor = ctx.createDynamicsCompressor();
-    compressor.threshold.value = -6;
-    compressor.ratio.value = 20;
-    compressor.connect(ctx.destination);
-
-    const master = ctx.createGain();
-    master.gain.value = 1.5;
-    master.connect(compressor);
-
-    const beep = (freq: number, start: number, duration = 0.15) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.connect(g);
-      g.connect(master);
-      osc.type = "square";
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0.9, ctx.currentTime + start);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration + 0.02);
-    };
-
-    // iFood-style: 3 ascending beeps × 2 bursts
-    beep(880,  0.00);
-    beep(1100, 0.18);
-    beep(1320, 0.36, 0.22);
-    beep(880,  0.75);
-    beep(1100, 0.93);
-    beep(1320, 1.11, 0.22);
-  } catch {
-    // audio not available / blocked
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Persistent new-order popup (shown in ALL admin tabs)
 // ---------------------------------------------------------------------------
 type NewOrderPopupProps = {
@@ -302,6 +259,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const seenOrderIdsRef = useRef<Set<string>>(new Set());
   const soundedOrderIdsRef = useRef<Set<string>>(new Set());
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bellAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Preload doorbell audio on mount
+  useEffect(() => {
+    bellAudioRef.current = new Audio('/audio/audio de campainha.mp3');
+    bellAudioRef.current.preload = 'auto';
+    bellAudioRef.current.volume = 1.0;
+  }, []);
+
+  function playDoorbell() {
+    try {
+      const audio = bellAudioRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      }
+    } catch {
+      // audio not available / blocked
+    }
+  }
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -322,7 +299,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!soundedOrderIdsRef.current.has(o.id)) {
           soundedOrderIdsRef.current.add(o.id);
           if (!playedSound) {
-            playIFoodBell();
+            playDoorbell();
             playedSound = true;
           }
         }
@@ -334,6 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } catch {
       // silent
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Poll for pending orders every 30 seconds
