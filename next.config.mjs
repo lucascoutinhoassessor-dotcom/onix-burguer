@@ -8,8 +8,7 @@ const nextConfig = {
         pathname: "/**"
       }
     ]
-  },
-  serverExternalPackages: ["whatsapp-web.js", "puppeteer", "puppeteer-core", "qrcode"]
+  }
 };
 
 export default nextConfig;

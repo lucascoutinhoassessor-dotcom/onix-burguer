@@ -1,47 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
-  try {
-    const { data: integration } = await supabaseAdmin
-      .from("integrations")
-      .select("api_key, api_secret, active")
-      .eq("platform", "whatsapp")
-      .maybeSingle();
-
-    if (!integration?.active || !integration.api_key) {
-      return false;
-    }
-
-    const phoneNumberId = integration.api_secret;
-    const token = integration.api_key;
-    const waPhone = phone.startsWith("55") ? phone : `55${phone}`;
-
-    const res = await fetch(
-      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: waPhone,
-          type: "text",
-          text: { body: message }
-        })
-      }
-    );
-
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -77,7 +39,6 @@ export async function POST(request: NextRequest) {
     customer = data;
   }
 
-  // Return 404 if not found
   if (!customer) {
     return NextResponse.json(
       { error: "Email ou telefone não cadastrado" },
@@ -86,7 +47,7 @@ export async function POST(request: NextRequest) {
   }
 
   const code = generateOTP();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   // Invalidate old codes
   await supabaseAdmin
@@ -122,10 +83,11 @@ export async function POST(request: NextRequest) {
     `Se não foi você, ignore esta mensagem.`
   ].join("\n");
 
-  // Send via WhatsApp if phone is available
+  // Send via WhatsApp Business API if phone is available and config is active
   let whatsappSent = false;
   if (hasPhone) {
-    whatsappSent = await sendWhatsAppMessage(customer.phone, whatsappMessage);
+    const result = await sendWhatsAppMessage(customer.phone, whatsappMessage);
+    whatsappSent = result.success;
   }
 
   // Determine which channels were used and build response message
@@ -141,18 +103,16 @@ export async function POST(request: NextRequest) {
   } else if (hasPhone && whatsappSent) {
     message = "Código enviado via WhatsApp. Verifique suas mensagens.";
   } else {
-    // Fallback: neither channel worked — show code on screen
     message = "Código gerado. Use o código abaixo para redefinir sua senha.";
   }
 
-  // Determine whether to expose the code on screen (email simulation or no channel available)
+  // Show code on screen when email exists (simulated) or when no channel worked
   const showCodeOnScreen = hasEmail || (!whatsappSent);
 
   return NextResponse.json({
     success: true,
     method: hasEmail && hasPhone ? "both" : hasEmail ? "email" : "whatsapp",
     message,
-    // Simulate email: always show code when email exists (email sending is simulated)
     ...(showCodeOnScreen ? { code } : {})
   });
 }

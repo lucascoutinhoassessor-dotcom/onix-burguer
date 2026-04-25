@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { OrderStatus } from "@/lib/supabase";
+import { ORDER_STATUS_LABELS } from "@/lib/supabase";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { formatCurrency } from "@/lib/checkout";
 
 // GET /api/orders?status=pending&limit=50&offset=0
 export async function GET(request: NextRequest) {
@@ -90,7 +93,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/orders?id=ONIX-xxx&status=preparing
+// PATCH /api/orders — update order status and notify customer via WhatsApp
 export async function PATCH(request: NextRequest) {
   try {
     const body = (await request.json()) as { order_id: string; status: OrderStatus };
@@ -110,6 +113,42 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     await supabaseAdmin.from("order_status_history").insert({ order_id, status });
+
+    // Send WhatsApp notification to customer (non-blocking)
+    try {
+      if (data?.customer_phone && status !== "pending" && status !== "cancelled") {
+        const statusMessages: Partial<Record<OrderStatus, string>> = {
+          confirmed: "seu pedido foi confirmado e logo entrará em preparo.",
+          preparing: "seu pedido está sendo preparado com muito carinho.",
+          ready: "seu pedido está pronto! Passaremos para entrega em breve.",
+          saiu_para_entrega: "seu pedido saiu para entrega! Nosso entregador está a caminho.",
+          delivered: "seu pedido foi entregue. Obrigado pela preferência!"
+        };
+
+        const statusDetail = statusMessages[status];
+        if (statusDetail) {
+          const firstName = String(data.customer_name).split(" ")[0];
+          const message = [
+            `🍔 *ONIX BURGUER - Atualização do Pedido*`,
+            ``,
+            `Olá, ${firstName}!`,
+            ``,
+            `Pedido #${order_id}`,
+            `Status: *${ORDER_STATUS_LABELS[status]}*`,
+            ``,
+            statusDetail,
+            ``,
+            `Valor total: ${formatCurrency(Number(data.total))}`,
+            ``,
+            `Qualquer dúvida, fale conosco. 😊`
+          ].join("\n");
+
+          await sendWhatsAppMessage(String(data.customer_phone), message);
+        }
+      }
+    } catch (waErr) {
+      console.error("WhatsApp notification failed (non-critical):", waErr);
+    }
 
     return NextResponse.json({ success: true, order: data });
   } catch (err) {
