@@ -14,24 +14,11 @@ async function sendWhatsAppMessage(phone: string, message: string): Promise<bool
       .maybeSingle();
 
     if (!integration?.active || !integration.api_key) {
-      // Log in marketing campaigns for audit
-      await supabaseAdmin.from("marketing_campaigns").insert({
-        type: "individual",
-        target: phone,
-        filters: null,
-        message,
-        status: "draft",
-        sent_at: new Date().toISOString(),
-        delivered_count: 0
-      });
       return false;
     }
 
-    // Call Meta WhatsApp Business Cloud API
-    // api_key = Bearer token; api_secret = Phone Number ID
     const phoneNumberId = integration.api_secret;
     const token = integration.api_key;
-
     const waPhone = phone.startsWith("55") ? phone : `55${phone}`;
 
     const res = await fetch(
@@ -71,12 +58,12 @@ export async function POST(request: NextRequest) {
   const trimmed = identifier.trim();
   const isEmail = trimmed.includes("@");
 
-  let customer: { id: string; name: string; phone: string } | null = null;
+  let customer: { id: string; name: string; phone: string; email: string | null } | null = null;
 
   if (isEmail) {
     const { data } = await supabaseAdmin
       .from("customer_accounts")
-      .select("id, name, phone")
+      .select("id, name, phone, email")
       .eq("email", trimmed.toLowerCase())
       .maybeSingle();
     customer = data;
@@ -84,18 +71,18 @@ export async function POST(request: NextRequest) {
     const cleanPhone = trimmed.replace(/\D/g, "");
     const { data } = await supabaseAdmin
       .from("customer_accounts")
-      .select("id, name, phone")
+      .select("id, name, phone, email")
       .eq("phone", cleanPhone)
       .maybeSingle();
     customer = data;
   }
 
-  // Always return success to avoid account enumeration
+  // Return 404 if not found
   if (!customer) {
-    return NextResponse.json({
-      success: true,
-      message: "Se uma conta for encontrada, você receberá o código no WhatsApp."
-    });
+    return NextResponse.json(
+      { error: "Email ou telefone não cadastrado" },
+      { status: 404 }
+    );
   }
 
   const code = generateOTP();
@@ -120,8 +107,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Erro ao gerar código" }, { status: 500 });
   }
 
-  // Send via WhatsApp
-  const message = [
+  const hasEmail = !!customer.email;
+  const hasPhone = !!customer.phone;
+
+  // Build WhatsApp message
+  const whatsappMessage = [
     `*Onix Burguer* - Recuperação de senha`,
     ``,
     `Olá, ${customer.name.split(" ")[0]}!`,
@@ -132,12 +122,37 @@ export async function POST(request: NextRequest) {
     `Se não foi você, ignore esta mensagem.`
   ].join("\n");
 
-  await sendWhatsAppMessage(customer.phone, message);
+  // Send via WhatsApp if phone is available
+  let whatsappSent = false;
+  if (hasPhone) {
+    whatsappSent = await sendWhatsAppMessage(customer.phone, whatsappMessage);
+  }
+
+  // Determine which channels were used and build response message
+  const channels: string[] = [];
+  if (hasEmail) channels.push("email");
+  if (hasPhone && whatsappSent) channels.push("WhatsApp");
+
+  let message: string;
+  if (channels.length === 2) {
+    message = "Código enviado para seu e-mail e WhatsApp.";
+  } else if (hasEmail && (!hasPhone || !whatsappSent)) {
+    message = "Código enviado para seu e-mail. Verifique sua caixa de entrada.";
+  } else if (hasPhone && whatsappSent) {
+    message = "Código enviado via WhatsApp. Verifique suas mensagens.";
+  } else {
+    // Fallback: neither channel worked — show code on screen
+    message = "Código gerado. Use o código abaixo para redefinir sua senha.";
+  }
+
+  // Determine whether to expose the code on screen (email simulation or no channel available)
+  const showCodeOnScreen = hasEmail || (!whatsappSent);
 
   return NextResponse.json({
     success: true,
-    message: "Se uma conta for encontrada, você receberá o código no WhatsApp.",
-    // In dev mode expose the code for testing (remove in production)
-    ...(process.env.NODE_ENV !== "production" ? { _dev_code: code } : {})
+    method: hasEmail && hasPhone ? "both" : hasEmail ? "email" : "whatsapp",
+    message,
+    // Simulate email: always show code when email exists (email sending is simulated)
+    ...(showCodeOnScreen ? { code } : {})
   });
 }

@@ -31,6 +31,8 @@ export default function LoginClientePage() {
   // Forgot password fields
   const [forgotIdentifier, setForgotIdentifier] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
+  const [forgotCode, setForgotCode] = useState<string | null>(null);
+  const [forgotMethod, setForgotMethod] = useState<string>("");
 
   // Reset password fields
   const [resetCode, setResetCode] = useState("");
@@ -133,13 +135,20 @@ export default function LoginClientePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier: forgotIdentifier })
       });
-      const data = (await res.json()) as { success?: boolean; _dev_code?: string };
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+        method?: string;
+        code?: string;
+      };
       if (res.ok && data.success) {
         setForgotSent(true);
-        setSuccess("Código enviado! Verifique seu WhatsApp.");
-        if (data._dev_code) {
-          setSuccess(`Código enviado! (DEV: ${data._dev_code})`);
-        }
+        setForgotMethod(data.method ?? "");
+        setForgotCode(data.code ?? null);
+        setSuccess(data.message ?? "Código enviado!");
+      } else {
+        setError(data.error ?? "Erro ao enviar código");
       }
     } catch {
       setError("Erro de conexão");
@@ -427,7 +436,11 @@ export default function LoginClientePage() {
                 </h1>
                 <p className="mt-1 text-sm text-white/50">
                   {forgotSent
-                    ? "Insira o código recebido no WhatsApp"
+                    ? forgotMethod === "both"
+                      ? "Código enviado para seu e-mail e WhatsApp"
+                      : forgotMethod === "email"
+                      ? "Verifique seu e-mail com o código abaixo"
+                      : "Insira o código recebido no WhatsApp"
                     : "Informe seu e-mail ou telefone cadastrado"}
                 </p>
               </div>
@@ -467,6 +480,15 @@ export default function LoginClientePage() {
                       {success}
                     </div>
                   )}
+                  {forgotCode && (
+                    <div className="rounded-2xl border border-amberglow/30 bg-amberglow/10 px-4 py-4 text-center">
+                      <p className="text-xs uppercase tracking-[0.3em] text-amberglow mb-2">
+                        {forgotMethod === "both" ? "Código (e-mail simulado)" : "Código de verificação"}
+                      </p>
+                      <p className="font-title text-3xl tracking-[0.5em] text-cream">{forgotCode}</p>
+                      <p className="mt-2 text-xs text-white/45">Válido por 15 minutos</p>
+                    </div>
+                  )}
                   <button
                     onClick={() => changeView("reset")}
                     className="w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d]"
@@ -476,6 +498,8 @@ export default function LoginClientePage() {
                   <button
                     onClick={() => {
                       setForgotSent(false);
+                      setForgotCode(null);
+                      setForgotMethod("");
                       setSuccess("");
                     }}
                     className="w-full rounded-full border border-white/10 px-6 py-3 text-sm text-cream/60 transition hover:bg-white/5"

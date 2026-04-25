@@ -110,9 +110,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
               <Link
-                href="https://wa.me/5521965565600"
-                target="_blank"
-                rel="noreferrer"
+                href="/cardapio"
                 className="btn-premium rounded-full bg-amberglow px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-obsidian hover:bg-[#ffcb7d] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
               >
                 Fazer pedido agora
