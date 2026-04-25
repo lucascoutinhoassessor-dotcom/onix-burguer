@@ -41,6 +41,8 @@ export default function AdminFinanceiroPage() {
   const [error, setError] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
 
   async function load() {
     try {
@@ -57,6 +59,21 @@ export default function AdminFinanceiroPage() {
   }
 
   useEffect(() => { load(); }, [filterType, filterMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMsg("");
+    try {
+      const res = await fetch("/api/admin/financial", { method: "PUT" });
+      const data = (await res.json()) as { synced?: number; message?: string; error?: string };
+      setSyncMsg(data.message ?? data.error ?? "Sincronização concluída.");
+      if ((data.synced ?? 0) > 0) await load();
+    } catch {
+      setSyncMsg("Erro ao sincronizar.");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function openCreate() {
     setForm(EMPTY_FORM);
@@ -139,13 +156,35 @@ export default function AdminFinanceiroPage() {
           <h1 className="font-title text-2xl tracking-wide text-cream">Financeiro</h1>
           <p className="mt-0.5 text-sm text-cream/40">{entries.length} lançamentos</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="rounded-lg bg-amberglow/20 px-3 py-1.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
-        >
-          + Novo lançamento
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Sync button */}
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            title="Verificar pedidos sem lançamento e criar automaticamente"
+            className="flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 disabled:opacity-50"
+          >
+            <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 fill-current ${syncing ? "animate-spin" : ""}`}>
+              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+            </svg>
+            {syncing ? "Sincronizando..." : "Sincronizar pedidos"}
+          </button>
+          <button
+            onClick={openCreate}
+            className="rounded-lg bg-amberglow/20 px-3 py-1.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
+          >
+            + Novo lançamento
+          </button>
+        </div>
       </div>
+
+      {/* Sync result message */}
+      {syncMsg && (
+        <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-300 flex items-center justify-between">
+          <span>{syncMsg}</span>
+          <button onClick={() => setSyncMsg("")} className="text-blue-400/60 hover:text-blue-400 ml-4">✕</button>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -203,6 +242,7 @@ export default function AdminFinanceiroPage() {
               <tr className="border-b border-white/8 bg-white/[0.02]">
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">DESCRIÇÃO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">CATEGORIA</th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">PEDIDO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">VENCIMENTO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">VALOR</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">STATUS</th>
@@ -217,6 +257,19 @@ export default function AdminFinanceiroPage() {
                     <p className="text-xs text-cream/40">{e.type === "income" ? "Receita" : "Despesa"}</p>
                   </td>
                   <td className="px-4 py-3 text-xs text-cream/50">{e.category}</td>
+                  <td className="px-4 py-3">
+                    {e.order_id ? (
+                      <a
+                        href="/admin/pedidos"
+                        className="font-mono text-xs text-blue-400 hover:text-blue-300"
+                        title={`Ver pedido ${e.order_id}`}
+                      >
+                        {e.order_id}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-cream/25">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-xs text-cream/50">
                     {new Date(e.due_date + "T12:00:00").toLocaleDateString("pt-BR")}
                   </td>

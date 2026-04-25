@@ -70,6 +70,17 @@ export type DbMenuItem = {
 // Role types
 export type EmployeeRole = "owner" | "manager" | "staff" | "motoboy";
 
+export type EmployeePermission =
+  | "dashboard"
+  | "pedidos"
+  | "cardapio"
+  | "promocoes"
+  | "estoque"
+  | "financeiro"
+  | "colaboradores"
+  | "integracoes"
+  | "clientes";
+
 export type DbEmployee = {
   id: string;
   email: string;
@@ -80,6 +91,7 @@ export type DbEmployee = {
   cpf: string | null;
   cnh: string | null;
   document_photo_url: string | null;
+  permissions: EmployeePermission[] | null;
   created_at: string;
 };
 
@@ -118,6 +130,7 @@ export type DbFinancialEntry = {
   amount: number;
   due_date: string;
   status: "pending" | "paid" | "overdue";
+  order_id: string | null;
   created_at: string;
 };
 

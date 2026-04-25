@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import type { DbOrder, OrderStatus } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/checkout";
 
 const NAV_ITEMS = [
   {
     href: "/admin",
     label: "Dashboard",
     exact: true,
+    key: "dashboard",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
@@ -19,6 +22,7 @@ const NAV_ITEMS = [
     href: "/admin/pedidos",
     label: "Pedidos",
     exact: false,
+    key: "pedidos",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
@@ -29,6 +33,7 @@ const NAV_ITEMS = [
     href: "/admin/cardapio",
     label: "Cardápio",
     exact: false,
+    key: "cardapio",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05h-5V1h-1.97v4.05h-4.97l.3 2.34c1.71.47 3.31 1.32 4.27 2.26 1.44 1.42 2.43 2.89 2.43 5.29v8.05zM1 21.99V21h15.03v.99c0 .55-.45 1-1.01 1H2.01c-.56 0-1.01-.45-1.01-1zm15.03-7c0-8-15.03-8-15.03 0h15.03zM1.02 17h15v2h-15z" />
@@ -39,6 +44,7 @@ const NAV_ITEMS = [
     href: "/admin/promocoes",
     label: "Promoções",
     exact: false,
+    key: "promocoes",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
@@ -49,6 +55,7 @@ const NAV_ITEMS = [
     href: "/admin/estoque",
     label: "Estoque",
     exact: false,
+    key: "estoque",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.72V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.72c.57-.38 1-.99 1-1.71V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4l16-.02V7z" />
@@ -59,6 +66,7 @@ const NAV_ITEMS = [
     href: "/admin/financeiro",
     label: "Financeiro",
     exact: false,
+    key: "financeiro",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
@@ -69,6 +77,7 @@ const NAV_ITEMS = [
     href: "/admin/colaboradores",
     label: "Colaboradores",
     exact: false,
+    key: "colaboradores",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
@@ -79,6 +88,7 @@ const NAV_ITEMS = [
     href: "/admin/clientes",
     label: "Clientes",
     exact: false,
+    key: "clientes",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
@@ -89,6 +99,7 @@ const NAV_ITEMS = [
     href: "/admin/financeiro/fornecedores",
     label: "Fornecedores",
     exact: false,
+    key: "fornecedores",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zm-1.5 1.5 1.96 2.5H17V9.5h1.5zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
@@ -99,6 +110,7 @@ const NAV_ITEMS = [
     href: "/admin/integracoes",
     label: "Integrações",
     exact: false,
+    key: "integracoes",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
         <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
@@ -106,6 +118,152 @@ const NAV_ITEMS = [
     )
   }
 ];
+
+// ---------------------------------------------------------------------------
+// iFood-style loud bell sound via Web Audio API
+// ---------------------------------------------------------------------------
+function playIFoodBell() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
+
+    // Master gain + compressor for loudness
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -6;
+    compressor.ratio.value = 20;
+    compressor.connect(ctx.destination);
+
+    const master = ctx.createGain();
+    master.gain.value = 1.5;
+    master.connect(compressor);
+
+    const beep = (freq: number, start: number, duration = 0.15) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g);
+      g.connect(master);
+      osc.type = "square";
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.9, ctx.currentTime + start);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration + 0.02);
+    };
+
+    // iFood-style: 3 ascending beeps × 2 bursts
+    beep(880,  0.00);
+    beep(1100, 0.18);
+    beep(1320, 0.36, 0.22);
+    beep(880,  0.75);
+    beep(1100, 0.93);
+    beep(1320, 1.11, 0.22);
+  } catch {
+    // audio not available / blocked
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Persistent new-order popup (shown in ALL admin tabs)
+// ---------------------------------------------------------------------------
+type NewOrderPopupProps = {
+  orders: DbOrder[];
+  onAccept: (orderId: string) => Promise<void>;
+  onCancel: (orderId: string) => Promise<void>;
+  onDismiss: () => void;
+};
+
+function NewOrderPopup({ orders, onAccept, onCancel, onDismiss }: NewOrderPopupProps) {
+  const [acting, setActing] = useState<{ id: string; action: "accept" | "cancel" } | null>(null);
+
+  if (orders.length === 0) return null;
+
+  async function handleAccept(orderId: string) {
+    setActing({ id: orderId, action: "accept" });
+    await onAccept(orderId);
+    setActing(null);
+  }
+
+  async function handleCancel(orderId: string) {
+    if (!confirm("Cancelar este pedido?")) return;
+    setActing({ id: orderId, action: "cancel" });
+    await onCancel(orderId);
+    setActing(null);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl border border-amberglow/40 bg-coal shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-amberglow" />
+          </span>
+          <h2 className="font-title text-lg text-cream">
+            {orders.length === 1 ? "Novo pedido recebido!" : `${orders.length} pedidos aguardando!`}
+          </h2>
+        </div>
+
+        {/* Orders list */}
+        <div className="max-h-72 overflow-y-auto px-5 py-3 space-y-3">
+          {orders.map((order) => {
+            const items = Array.isArray(order.items) ? order.items : [];
+            const isActing = acting?.id === order.order_id;
+            return (
+              <div key={order.id} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-cream">{order.customer_name}</p>
+                    <p className="font-mono text-xs text-cream/40">{order.order_id}</p>
+                    <p className="mt-1 text-xs text-cream/50">
+                      {items.slice(0, 3).map((it: { name?: string; quantity?: number }, i: number) => (
+                        <span key={i}>{i > 0 ? ", " : ""}{it.quantity}x {it.name}</span>
+                      ))}
+                      {items.length > 3 && ` +${items.length - 3} itens`}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-semibold text-amberglow">{formatCurrency(Number(order.total))}</p>
+                    <p className="text-xs text-cream/40">
+                      {new Date(order.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => handleAccept(order.order_id)}
+                    disabled={isActing}
+                    className="flex-1 rounded-lg bg-amberglow/25 py-2 text-sm font-semibold text-amberglow transition hover:bg-amberglow/40 disabled:opacity-50"
+                  >
+                    {isActing && acting?.action === "accept" ? "Aceitando..." : "Aceitar"}
+                  </button>
+                  <button
+                    onClick={() => handleCancel(order.order_id)}
+                    disabled={isActing}
+                    className="flex-1 rounded-lg bg-red-500/15 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                  >
+                    {isActing && acting?.action === "cancel" ? "Cancelando..." : "Cancelar"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-white/8 px-5 py-3 flex items-center justify-between">
+          <p className="text-xs text-cream/30">Reaparecer em 30s se não atendido</p>
+          <button
+            onClick={onDismiss}
+            className="rounded-lg px-3 py-1.5 text-xs text-cream/40 hover:bg-white/5 hover:text-cream/60"
+          >
+            Ver depois
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SidebarNav({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
@@ -138,31 +296,99 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
   const [newOrderCount, setNewOrderCount] = useState(0);
 
+  // Popup state
+  const [pendingOrders, setPendingOrders] = useState<DbOrder[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const soundedOrderIdsRef = useRef<Set<string>>(new Set());
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/admin/login");
   }, [router]);
 
-  // Poll for new orders every 30 seconds for notification badge
-  useEffect(() => {
-    async function checkNewOrders() {
-      try {
-        const today = new Date().toISOString().split("T")[0];
-        const res = await fetch(`/api/orders?status=pending&date=${today}&limit=1`);
-        const data = (await res.json()) as { total?: number };
-        if (data.total !== undefined) setNewOrderCount(data.total);
-      } catch {
-        // silent
-      }
-    }
+  const checkPendingOrders = useCallback(async () => {
+    try {
+      const res = await fetch("/api/orders?status=pending&limit=50");
+      const data = (await res.json()) as { orders?: DbOrder[]; total?: number };
+      const pending = data.orders ?? [];
 
-    checkNewOrders();
-    const interval = setInterval(checkNewOrders, 30000);
-    return () => clearInterval(interval);
+      setNewOrderCount(pending.length);
+
+      // Play sound for brand-new orders
+      let playedSound = false;
+      for (const o of pending) {
+        if (!soundedOrderIdsRef.current.has(o.id)) {
+          soundedOrderIdsRef.current.add(o.id);
+          if (!playedSound) {
+            playIFoodBell();
+            playedSound = true;
+          }
+        }
+        seenOrderIdsRef.current.add(o.id);
+      }
+
+      setPendingOrders(pending);
+      if (pending.length > 0) setShowPopup(true);
+    } catch {
+      // silent
+    }
   }, []);
+
+  // Poll for pending orders every 30 seconds
+  useEffect(() => {
+    checkPendingOrders();
+    const interval = setInterval(checkPendingOrders, 30000);
+    return () => clearInterval(interval);
+  }, [checkPendingOrders]);
+
+  // Hide popup when no more pending
+  useEffect(() => {
+    if (pendingOrders.length === 0) setShowPopup(false);
+  }, [pendingOrders]);
+
+  async function handleAcceptFromPopup(orderId: string) {
+    await fetch("/api/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: orderId, status: "preparing" as OrderStatus })
+    });
+    setPendingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+    setNewOrderCount((c) => Math.max(0, c - 1));
+  }
+
+  async function handleCancelFromPopup(orderId: string) {
+    await fetch("/api/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: orderId, status: "cancelled" as OrderStatus })
+    });
+    setPendingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+    setNewOrderCount((c) => Math.max(0, c - 1));
+  }
+
+  function handleDismissPopup() {
+    setShowPopup(false);
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    // Re-check (and re-show) after 30s if still pending
+    dismissTimerRef.current = setTimeout(() => {
+      checkPendingOrders();
+    }, 30000);
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] flex bg-obsidian font-body">
+      {/* Global new-order popup — visible on ALL admin pages */}
+      {showPopup && pendingOrders.length > 0 && (
+        <NewOrderPopup
+          orders={pendingOrders}
+          onAccept={handleAcceptFromPopup}
+          onCancel={handleCancelFromPopup}
+          onDismiss={handleDismissPopup}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`flex flex-shrink-0 flex-col border-r border-white/8 bg-coal transition-all duration-300 ${
@@ -206,9 +432,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-semibold text-cream/70">Painel Administrativo</h2>
             {newOrderCount > 0 && (
-              <span className="rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow">
+              <button
+                onClick={() => setShowPopup(true)}
+                className="flex items-center gap-1.5 rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amberglow" />
+                </span>
                 {newOrderCount} novo{newOrderCount !== 1 ? "s" : ""}
-              </span>
+              </button>
             )}
           </div>
           <button

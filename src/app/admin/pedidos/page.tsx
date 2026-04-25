@@ -20,35 +20,6 @@ const STATUS_OPTIONS: { value: "all" | OrderStatus; label: string }[] = [
 const STATUS_FLOW: OrderStatus[] = ["pending", "confirmed", "preparing", "ready", "saiu_para_entrega", "delivered"];
 
 // ---------------------------------------------------------------------------
-// Bell sound via Web Audio API (no external file needed)
-// ---------------------------------------------------------------------------
-function playBellSound() {
-  try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-
-    const beep = (freq: number, start: number, duration: number, gain: number) => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = "sine";
-      gainNode.gain.setValueAtTime(gain, ctx.currentTime + start);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration + 0.05);
-    };
-
-    // Three ascending bell tones
-    beep(880, 0, 0.4, 0.4);
-    beep(1100, 0.15, 0.4, 0.3);
-    beep(1320, 0.3, 0.6, 0.35);
-  } catch {
-    // audio not available
-  }
-}
-
-// ---------------------------------------------------------------------------
 // WhatsApp message builder
 // ---------------------------------------------------------------------------
 function buildWhatsAppCustomerMessage(order: DbOrder, newStatus: OrderStatus): string {
@@ -80,91 +51,6 @@ function buildWhatsAppCustomerMessage(order: DbOrder, newStatus: OrderStatus): s
   const phone = order.customer_phone.replace(/\D/g, "");
   const withCountry = phone.startsWith("55") ? phone : `55${phone}`;
   return `https://wa.me/${withCountry}?text=${encodeURIComponent(message)}`;
-}
-
-// ---------------------------------------------------------------------------
-// Persistent new-order popup modal
-// ---------------------------------------------------------------------------
-type NewOrderPopupProps = {
-  orders: DbOrder[];
-  onAccept: (orderId: string) => Promise<void>;
-  onDismiss: () => void;
-};
-
-function NewOrderPopup({ orders, onAccept, onDismiss }: NewOrderPopupProps) {
-  const [accepting, setAccepting] = useState<string | null>(null);
-
-  if (orders.length === 0) return null;
-
-  async function handleAccept(orderId: string) {
-    setAccepting(orderId);
-    await onAccept(orderId);
-    setAccepting(null);
-  }
-
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl border border-amberglow/40 bg-coal shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
-          <span className="relative flex h-3 w-3">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-amberglow" />
-          </span>
-          <h2 className="font-title text-lg text-cream">
-            {orders.length === 1 ? "Novo pedido recebido!" : `${orders.length} pedidos aguardando!`}
-          </h2>
-        </div>
-
-        {/* Orders list */}
-        <div className="max-h-72 overflow-y-auto px-5 py-3 space-y-3">
-          {orders.map((order) => {
-            const items = Array.isArray(order.items) ? order.items : [];
-            return (
-              <div key={order.id} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-cream">{order.customer_name}</p>
-                    <p className="font-mono text-xs text-cream/40">{order.order_id}</p>
-                    <p className="mt-1 text-xs text-cream/50">
-                      {items.slice(0, 3).map((it: { name?: string; quantity?: number }, i: number) => (
-                        <span key={i}>{i > 0 ? ", " : ""}{it.quantity}x {it.name}</span>
-                      ))}
-                      {items.length > 3 && ` +${items.length - 3} itens`}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-semibold text-amberglow">{formatCurrency(Number(order.total))}</p>
-                    <p className="text-xs text-cream/40">
-                      {new Date(order.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleAccept(order.order_id)}
-                  disabled={accepting === order.order_id}
-                  className="mt-3 w-full rounded-lg bg-amberglow/25 py-2 text-sm font-semibold text-amberglow transition hover:bg-amberglow/40 disabled:opacity-50"
-                >
-                  {accepting === order.order_id ? "Aceitando..." : "Aceitar pedido"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-white/8 px-5 py-3 flex items-center justify-between">
-          <p className="text-xs text-cream/30">Popup reaparecer em 30s se não aceitar</p>
-          <button
-            onClick={onDismiss}
-            className="rounded-lg px-3 py-1.5 text-xs text-cream/40 hover:bg-white/5 hover:text-cream/60"
-          >
-            Ver depois
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -290,13 +176,8 @@ export default function AdminPedidosPage() {
   const [orders, setOrders] = useState<DbOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [loading, setLoading] = useState(true);
-
-  // New order notification state
-  const [pendingOrders, setPendingOrders] = useState<DbOrder[]>([]);
-  const [showPopup, setShowPopup] = useState(false);
-  const seenOrderIdsRef = useRef<Set<string>>(new Set());
-  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const soundedOrderIdsRef = useRef<Set<string>>(new Set());
+  const [pendingCount, setPendingCount] = useState(0);
+  const pendingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -306,6 +187,10 @@ export default function AdminPedidosPage() {
       const data = (await res.json()) as { orders?: DbOrder[] };
       const fetched = data.orders ?? [];
       setOrders(fetched);
+      if (statusFilter === "pending" || statusFilter === "all") {
+        const pc = fetched.filter((o) => o.status === "pending").length;
+        setPendingCount(statusFilter === "pending" ? fetched.length : pc);
+      }
     } catch (err) {
       console.error("Fetch orders error:", err);
     } finally {
@@ -313,69 +198,28 @@ export default function AdminPedidosPage() {
     }
   }, [statusFilter]);
 
-  // Separately poll ALL pending orders (regardless of filter) for notifications
-  const checkPendingOrders = useCallback(async () => {
-    try {
-      const res = await fetch("/api/orders?status=pending&limit=50");
-      const data = (await res.json()) as { orders?: DbOrder[] };
-      const pending = data.orders ?? [];
-
-      // Find brand-new orders not yet seen
-      const newOrders = pending.filter((o) => !seenOrderIdsRef.current.has(o.id));
-
-      if (newOrders.length > 0) {
-        // Play sound once for each new order
-        let didPlaySound = false;
-        for (const o of newOrders) {
-          if (!soundedOrderIdsRef.current.has(o.id)) {
-            soundedOrderIdsRef.current.add(o.id);
-            if (!didPlaySound) {
-              playBellSound();
-              didPlaySound = true;
-            }
-          }
-          seenOrderIdsRef.current.add(o.id);
-        }
-      }
-
-      setPendingOrders(pending);
-
-      // Show popup if there are pending orders
-      if (pending.length > 0) {
-        setShowPopup(true);
-      }
-    } catch {
-      // silent
-    }
-  }, []);
-
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 15000);
-    return () => clearInterval(interval);
+    if (pendingTimerRef.current) clearInterval(pendingTimerRef.current);
+    pendingTimerRef.current = setInterval(fetchOrders, 15000);
+    return () => {
+      if (pendingTimerRef.current) clearInterval(pendingTimerRef.current);
+    };
   }, [fetchOrders]);
-
-  // Poll pending orders every 30 seconds for popup
-  useEffect(() => {
-    checkPendingOrders();
-    const interval = setInterval(checkPendingOrders, 30000);
-    return () => clearInterval(interval);
-  }, [checkPendingOrders]);
 
   // Supabase Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel("orders-realtime")
+      .channel("orders-realtime-page")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
-        checkPendingOrders();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrders, checkPendingOrders]);
+  }, [fetchOrders]);
 
   async function handleStatusChange(orderId: string, status: OrderStatus) {
     try {
@@ -385,46 +229,13 @@ export default function AdminPedidosPage() {
         body: JSON.stringify({ order_id: orderId, status })
       });
       await fetchOrders();
-      await checkPendingOrders();
     } catch (err) {
       console.error("Status update error:", err);
     }
   }
 
-  // Accept order from popup → change to "preparing"
-  async function handleAcceptFromPopup(orderId: string) {
-    await handleStatusChange(orderId, "preparing");
-    // Update local pending list
-    setPendingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
-  }
-
-  function handleDismissPopup() {
-    setShowPopup(false);
-    // Re-show after 30 seconds if still pending
-    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
-    popupTimerRef.current = setTimeout(() => {
-      checkPendingOrders();
-    }, 30000);
-  }
-
-  // When pending orders are cleared, hide popup
-  useEffect(() => {
-    if (pendingOrders.length === 0) {
-      setShowPopup(false);
-    }
-  }, [pendingOrders]);
-
   return (
     <div className="p-6">
-      {/* Persistent popup modal for new pending orders */}
-      {showPopup && pendingOrders.length > 0 && (
-        <NewOrderPopup
-          orders={pendingOrders}
-          onAccept={handleAcceptFromPopup}
-          onDismiss={handleDismissPopup}
-        />
-      )}
-
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -432,33 +243,19 @@ export default function AdminPedidosPage() {
           <p className="mt-0.5 text-sm text-cream/40">
             {orders.length} pedido{orders.length !== 1 ? "s" : ""}
             {statusFilter !== "all" ? ` — ${ORDER_STATUS_LABELS[statusFilter]}` : ""}
-            {pendingOrders.length > 0 && (
+            {pendingCount > 0 && (
               <span className="ml-2 rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow">
-                {pendingOrders.length} aguardando
+                {pendingCount} aguardando
               </span>
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {pendingOrders.length > 0 && (
-            <button
-              onClick={() => setShowPopup(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-amberglow/30 bg-amberglow/10 px-3 py-1.5 text-xs font-medium text-amberglow hover:bg-amberglow/20"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amberglow" />
-              </span>
-              {pendingOrders.length} novo{pendingOrders.length !== 1 ? "s" : ""}
-            </button>
-          )}
-          <button
-            onClick={() => fetchOrders()}
-            className="rounded-lg border border-white/8 px-3 py-1.5 text-xs text-cream/50 transition hover:border-amberglow/30 hover:text-amberglow"
-          >
-            Atualizar
-          </button>
-        </div>
+        <button
+          onClick={() => fetchOrders()}
+          className="rounded-lg border border-white/8 px-3 py-1.5 text-xs text-cream/50 transition hover:border-amberglow/30 hover:text-amberglow"
+        >
+          Atualizar
+        </button>
       </div>
 
       {/* Status filter */}

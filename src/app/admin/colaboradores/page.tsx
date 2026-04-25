@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { DbEmployee, EmployeeRole } from "@/lib/supabase";
+import type { DbEmployee, EmployeeRole, EmployeePermission } from "@/lib/supabase";
 
 type FormState = {
   email: string;
@@ -13,6 +13,29 @@ type FormState = {
   cnh: string;
   document_photo_url: string;
   uploadMode: "url" | "file";
+  permissions: EmployeePermission[] | null;
+  useCustomPermissions: boolean;
+};
+
+// All available tab permissions
+const ALL_PERMISSIONS: { key: EmployeePermission; label: string }[] = [
+  { key: "dashboard",      label: "Dashboard" },
+  { key: "pedidos",        label: "Pedidos" },
+  { key: "cardapio",       label: "Cardápio" },
+  { key: "promocoes",      label: "Promoções" },
+  { key: "estoque",        label: "Estoque" },
+  { key: "financeiro",     label: "Financeiro" },
+  { key: "colaboradores",  label: "Colaboradores" },
+  { key: "integracoes",    label: "Integrações" },
+  { key: "clientes",       label: "Clientes" }
+];
+
+// Default permissions by role (used when not customized)
+const ROLE_DEFAULT_PERMISSIONS: Record<EmployeeRole, EmployeePermission[]> = {
+  owner:   ["dashboard","pedidos","cardapio","promocoes","estoque","financeiro","colaboradores","integracoes","clientes"],
+  manager: ["dashboard","pedidos","cardapio","promocoes","estoque","financeiro","clientes"],
+  staff:   ["dashboard","pedidos","estoque"],
+  motoboy: ["dashboard","pedidos"]
 };
 
 const EMPTY_FORM: FormState = {
@@ -24,7 +47,9 @@ const EMPTY_FORM: FormState = {
   cpf: "",
   cnh: "",
   document_photo_url: "",
-  uploadMode: "url"
+  uploadMode: "url",
+  permissions: null,
+  useCustomPermissions: false
 };
 
 const ROLE_LABELS: Record<EmployeeRole, string> = {
@@ -42,6 +67,68 @@ const ROLE_COLORS: Record<EmployeeRole, string> = {
 };
 
 type EmpDisplay = Omit<DbEmployee, "password_hash">;
+
+// Permissions editor sub-component
+function PermissionsEditor({
+  role,
+  permissions,
+  useCustom,
+  onToggleCustom,
+  onTogglePerm
+}: {
+  role: EmployeeRole;
+  permissions: EmployeePermission[];
+  useCustom: boolean;
+  onToggleCustom: (v: boolean) => void;
+  onTogglePerm: (key: EmployeePermission) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs font-medium tracking-wider text-cream/50">PERMISSÕES DE ABAS</p>
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={useCustom}
+            onChange={(e) => onToggleCustom(e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-xs text-cream/60">Personalizar</span>
+        </label>
+      </div>
+      {!useCustom ? (
+        <p className="text-xs text-cream/40">
+          Usando permissões padrão do cargo ({ROLE_LABELS[role]}).
+        </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          {ALL_PERMISSIONS.map((p) => {
+            const enabled = permissions.includes(p.key);
+            return (
+              <label
+                key={p.key}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-xs transition ${
+                  enabled
+                    ? "border-amberglow/40 bg-amberglow/10 text-amberglow"
+                    : "border-white/10 bg-white/[0.02] text-cream/40 hover:border-white/20"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => onTogglePerm(p.key)}
+                  className="sr-only"
+                />
+                <span className={`h-3 w-3 flex-shrink-0 rounded border ${enabled ? "border-amberglow bg-amberglow" : "border-white/30"}`} />
+                {p.label}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminColaboradoresPage() {
   const [employees, setEmployees] = useState<EmpDisplay[]>([]);
@@ -73,6 +160,7 @@ export default function AdminColaboradoresPage() {
   }
 
   function openEdit(emp: EmpDisplay) {
+    const hasCustomPerms = emp.permissions != null && Array.isArray(emp.permissions) && emp.permissions.length > 0;
     setForm({
       email: emp.email,
       name: emp.name,
@@ -82,11 +170,40 @@ export default function AdminColaboradoresPage() {
       cpf: emp.cpf ?? "",
       cnh: emp.cnh ?? "",
       document_photo_url: emp.document_photo_url ?? "",
-      uploadMode: "url"
+      uploadMode: "url",
+      permissions: hasCustomPerms ? (emp.permissions as EmployeePermission[]) : [...ROLE_DEFAULT_PERMISSIONS[emp.role]],
+      useCustomPermissions: hasCustomPerms
     });
     setEditingId(emp.id);
     setError("");
     setShowForm(true);
+  }
+
+  function handleToggleCustomPerms(v: boolean) {
+    setForm((f) => ({
+      ...f,
+      useCustomPermissions: v,
+      permissions: v ? (f.permissions ?? [...ROLE_DEFAULT_PERMISSIONS[f.role]]) : null
+    }));
+  }
+
+  function handleTogglePerm(key: EmployeePermission) {
+    setForm((f) => {
+      const current = f.permissions ?? [];
+      const updated = current.includes(key)
+        ? current.filter((p) => p !== key)
+        : [...current, key];
+      return { ...f, permissions: updated };
+    });
+  }
+
+  // When role changes, reset permissions to role defaults (if not customized)
+  function handleRoleChange(role: EmployeeRole) {
+    setForm((f) => ({
+      ...f,
+      role,
+      permissions: f.useCustomPermissions ? f.permissions : [...ROLE_DEFAULT_PERMISSIONS[role]]
+    }));
   }
 
   async function handleFileUpload(file: File) {
@@ -121,7 +238,8 @@ export default function AdminColaboradoresPage() {
         active: form.active,
         cpf: form.cpf || null,
         cnh: form.role === "motoboy" ? (form.cnh || null) : null,
-        document_photo_url: form.role === "motoboy" ? (form.document_photo_url || null) : null
+        document_photo_url: form.role === "motoboy" ? (form.document_photo_url || null) : null,
+        permissions: form.useCustomPermissions ? (form.permissions ?? null) : null
       };
       if (form.password) body.password = form.password;
 
@@ -180,10 +298,10 @@ export default function AdminColaboradoresPage() {
               {label}
             </span>
             <p className="mt-2 text-xs text-cream/40">
-              {role === "owner" && "Acesso completo ao painel, incluindo integrações e configurações"}
-              {role === "manager" && "Acesso a pedidos, cardápio, estoque, financeiro e promoções"}
-              {role === "staff" && "Acesso apenas a pedidos e estoque"}
-              {role === "motoboy" && "Entregador — recebe notificações de pedidos para entrega"}
+              {role === "owner" && "Acesso completo. Permissões customizáveis por colaborador."}
+              {role === "manager" && "Acesso a pedidos, cardápio, estoque, financeiro e promoções."}
+              {role === "staff" && "Acesso padrão: pedidos e estoque. Customizável."}
+              {role === "motoboy" && "Entregador — pedidos para entrega. Customizável."}
             </p>
           </div>
         ))}
@@ -203,72 +321,83 @@ export default function AdminColaboradoresPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">NOME</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">EMAIL</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">FUNÇÃO</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">CPF / CNH</th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">PERMISSÕES</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">STATUS</th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">AÇÕES</th>
               </tr>
             </thead>
             <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                  <td className="px-4 py-3 font-medium text-cream/90">
-                    <div className="flex items-center gap-2">
-                      {emp.document_photo_url && (
-                        <img
-                          src={emp.document_photo_url}
-                          alt="doc"
-                          className="h-7 w-7 rounded-full object-cover opacity-70"
-                        />
-                      )}
-                      {emp.name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-cream/50">{emp.email}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[emp.role]}`}>
-                      {ROLE_LABELS[emp.role]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-cream/50">
-                    {emp.cpf ? (
-                      <div>
-                        <p>CPF: {emp.cpf}</p>
-                        {emp.cnh && <p>CNH: {emp.cnh}</p>}
+              {employees.map((emp) => {
+                const hasCustom = emp.permissions != null && Array.isArray(emp.permissions) && emp.permissions.length > 0;
+                const displayPerms = hasCustom
+                  ? (emp.permissions as EmployeePermission[])
+                  : ROLE_DEFAULT_PERMISSIONS[emp.role];
+                return (
+                  <tr key={emp.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-medium text-cream/90">
+                      <div className="flex items-center gap-2">
+                        {emp.document_photo_url && (
+                          <img
+                            src={emp.document_photo_url}
+                            alt="doc"
+                            className="h-7 w-7 rounded-full object-cover opacity-70"
+                          />
+                        )}
+                        {emp.name}
                       </div>
-                    ) : (
-                      <span className="text-cream/25">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleToggle(emp)}
-                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
-                        emp.active
-                          ? "border-green-500/30 bg-green-500/10 text-green-400"
-                          : "border-red-500/30 bg-red-500/10 text-red-400"
-                      }`}
-                    >
-                      {emp.active ? "Ativo" : "Inativo"}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    </td>
+                    <td className="px-4 py-3 text-xs text-cream/50">{emp.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[emp.role]}`}>
+                        {ROLE_LABELS[emp.role]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {displayPerms.slice(0, 4).map((p) => (
+                          <span key={p} className={`rounded px-1.5 py-0.5 text-xs ${hasCustom ? "bg-amberglow/10 text-amberglow/80" : "bg-white/5 text-cream/30"}`}>
+                            {ALL_PERMISSIONS.find((ap) => ap.key === p)?.label ?? p}
+                          </span>
+                        ))}
+                        {displayPerms.length > 4 && (
+                          <span className="text-xs text-cream/30">+{displayPerms.length - 4}</span>
+                        )}
+                        {hasCustom && (
+                          <span className="rounded px-1.5 py-0.5 text-xs bg-amberglow/15 text-amberglow font-medium">custom</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
                       <button
-                        onClick={() => openEdit(emp)}
-                        className="rounded px-2 py-1 text-xs text-cream/40 hover:bg-white/5 hover:text-amberglow"
+                        onClick={() => handleToggle(emp)}
+                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                          emp.active
+                            ? "border-green-500/30 bg-green-500/10 text-green-400"
+                            : "border-red-500/30 bg-red-500/10 text-red-400"
+                        }`}
                       >
-                        Editar
+                        {emp.active ? "Ativo" : "Inativo"}
                       </button>
-                      <button
-                        onClick={() => handleDelete(emp.id)}
-                        className="rounded px-2 py-1 text-xs text-cream/30 hover:bg-red-500/10 hover:text-red-400"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(emp)}
+                          className="rounded px-2 py-1 text-xs text-cream/40 hover:bg-white/5 hover:text-amberglow"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp.id)}
+                          className="rounded px-2 py-1 text-xs text-cream/30 hover:bg-red-500/10 hover:text-red-400"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -281,7 +410,7 @@ export default function AdminColaboradoresPage() {
               {editingId ? "Editar Colaborador" : "Novo Colaborador"}
             </h2>
 
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+            <div className="max-h-[75vh] space-y-4 overflow-y-auto pr-1">
               <div>
                 <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">NOME *</label>
                 <input
@@ -319,7 +448,7 @@ export default function AdminColaboradoresPage() {
                   <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">FUNÇÃO</label>
                   <select
                     value={form.role}
-                    onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as EmployeeRole }))}
+                    onChange={(e) => handleRoleChange(e.target.value as EmployeeRole)}
                     className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
                   >
                     <option value="owner">Proprietário</option>
@@ -354,86 +483,95 @@ export default function AdminColaboradoresPage() {
 
               {/* Motoboy-specific fields */}
               {form.role === "motoboy" && (
-                <>
-                  <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
-                    <p className="mb-3 text-xs font-medium text-purple-400">Dados do Motoboy</p>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-                          CNH (número)
-                        </label>
+                <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
+                  <p className="mb-3 text-xs font-medium text-purple-400">Dados do Motoboy</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
+                        CNH (número)
+                      </label>
+                      <input
+                        value={form.cnh}
+                        onChange={(e) => setForm((f) => ({ ...f, cnh: e.target.value }))}
+                        placeholder="00000000000"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
+                        FOTO DO DOCUMENTO
+                      </label>
+                      <div className="mb-2 flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, uploadMode: "url" }))}
+                          className={`rounded-lg px-3 py-1 text-xs transition ${
+                            form.uploadMode === "url"
+                              ? "bg-amberglow/20 text-amberglow"
+                              : "text-cream/40 hover:bg-white/5"
+                          }`}
+                        >
+                          URL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, uploadMode: "file" }))}
+                          className={`rounded-lg px-3 py-1 text-xs transition ${
+                            form.uploadMode === "file"
+                              ? "bg-amberglow/20 text-amberglow"
+                              : "text-cream/40 hover:bg-white/5"
+                          }`}
+                        >
+                          Upload
+                        </button>
+                      </div>
+
+                      {form.uploadMode === "url" ? (
                         <input
-                          value={form.cnh}
-                          onChange={(e) => setForm((f) => ({ ...f, cnh: e.target.value }))}
-                          placeholder="00000000000"
+                          value={form.document_photo_url}
+                          onChange={(e) => setForm((f) => ({ ...f, document_photo_url: e.target.value }))}
+                          placeholder="https://..."
                           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
                         />
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-                          FOTO DO DOCUMENTO
-                        </label>
-                        <div className="mb-2 flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setForm((f) => ({ ...f, uploadMode: "url" }))}
-                            className={`rounded-lg px-3 py-1 text-xs transition ${
-                              form.uploadMode === "url"
-                                ? "bg-amberglow/20 text-amberglow"
-                                : "text-cream/40 hover:bg-white/5"
-                            }`}
-                          >
-                            URL
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setForm((f) => ({ ...f, uploadMode: "file" }))}
-                            className={`rounded-lg px-3 py-1 text-xs transition ${
-                              form.uploadMode === "file"
-                                ? "bg-amberglow/20 text-amberglow"
-                                : "text-cream/40 hover:bg-white/5"
-                            }`}
-                          >
-                            Upload
-                          </button>
-                        </div>
-
-                        {form.uploadMode === "url" ? (
+                      ) : (
+                        <div className="space-y-2">
                           <input
-                            value={form.document_photo_url}
-                            onChange={(e) => setForm((f) => ({ ...f, document_photo_url: e.target.value }))}
-                            placeholder="https://..."
-                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(file);
+                            }}
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-cream/70 file:mr-3 file:rounded file:border-0 file:bg-amberglow/20 file:px-2 file:py-1 file:text-xs file:text-amberglow"
                           />
-                        ) : (
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleFileUpload(file);
-                              }}
-                              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-cream/70 file:mr-3 file:rounded file:border-0 file:bg-amberglow/20 file:px-2 file:py-1 file:text-xs file:text-amberglow"
-                            />
-                            {uploading && <p className="text-xs text-cream/40">Enviando...</p>}
-                            {form.document_photo_url && !uploading && (
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={form.document_photo_url}
-                                  alt="Documento"
-                                  className="h-12 w-20 rounded-lg object-cover opacity-80"
-                                />
-                                <p className="text-xs text-green-400">Upload concluído</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                          {uploading && <p className="text-xs text-cream/40">Enviando...</p>}
+                          {form.document_photo_url && !uploading && (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={form.document_photo_url}
+                                alt="Documento"
+                                className="h-12 w-20 rounded-lg object-cover opacity-80"
+                              />
+                              <p className="text-xs text-green-400">Upload concluído</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </>
+                </div>
+              )}
+
+              {/* Permissions editor — only for non-owners */}
+              {form.role !== "owner" && (
+                <PermissionsEditor
+                  role={form.role}
+                  permissions={form.permissions ?? ROLE_DEFAULT_PERMISSIONS[form.role]}
+                  useCustom={form.useCustomPermissions}
+                  onToggleCustom={handleToggleCustomPerms}
+                  onTogglePerm={handleTogglePerm}
+                />
               )}
 
               {error && (

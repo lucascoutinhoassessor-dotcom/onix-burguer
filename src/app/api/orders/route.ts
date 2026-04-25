@@ -86,6 +86,18 @@ export async function POST(request: NextRequest) {
       status
     });
 
+    // Auto-create financial income entry linked to this order
+    const today = new Date().toISOString().split("T")[0];
+    await supabaseAdmin.from("financial_entries").insert({
+      type: "income",
+      category: "Vendas",
+      description: `Pedido #${order_id} — ${customer_name}`,
+      amount: Number(total),
+      due_date: today,
+      status: "pending",
+      order_id
+    });
+
     return NextResponse.json({ success: true, order: data });
   } catch (err) {
     console.error("POST /api/orders error:", err);
@@ -113,6 +125,21 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     await supabaseAdmin.from("order_status_history").insert({ order_id, status });
+
+    // Update financial entry status when order is delivered or cancelled
+    if (status === "delivered") {
+      await supabaseAdmin
+        .from("financial_entries")
+        .update({ status: "paid" })
+        .eq("order_id", order_id);
+    } else if (status === "cancelled") {
+      // Mark as overdue/cancelled — use description update to flag it
+      await supabaseAdmin
+        .from("financial_entries")
+        .update({ status: "overdue", description: `[CANCELADO] Pedido #${order_id}` })
+        .eq("order_id", order_id)
+        .eq("type", "income");
+    }
 
     // Send WhatsApp notification to customer (non-blocking)
     try {

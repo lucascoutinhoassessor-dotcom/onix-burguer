@@ -6,7 +6,7 @@ import type { EmployeeRole } from "@/lib/supabase";
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("employees")
-    .select("id, email, name, role, active, cpf, cnh, document_photo_url, created_at")
+    .select("id, email, name, role, active, cpf, cnh, document_photo_url, permissions, created_at")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     active = true,
     cpf = null,
     cnh = null,
-    document_photo_url = null
+    document_photo_url = null,
+    permissions = null
   } = body as {
     email: string;
     name: string;
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
     cpf?: string | null;
     cnh?: string | null;
     document_photo_url?: string | null;
+    permissions?: string[] | null;
   };
 
   if (!email || !name || !password) {
@@ -43,8 +45,8 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("employees")
-    .insert({ email, name, password_hash, role, active, cpf, cnh, document_photo_url })
-    .select("id, email, name, role, active, cpf, cnh, document_photo_url, created_at")
+    .insert({ email, name, password_hash, role, active, cpf, cnh, document_photo_url, permissions })
+    .select("id, email, name, role, active, cpf, cnh, document_photo_url, permissions, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -66,7 +68,7 @@ export async function PATCH(request: NextRequest) {
     .from("employees")
     .update(updates)
     .eq("id", id)
-    .select("id, email, name, role, active, cpf, cnh, document_photo_url, created_at")
+    .select("id, email, name, role, active, cpf, cnh, document_photo_url, permissions, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

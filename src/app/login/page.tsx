@@ -221,11 +221,11 @@ export default function LoginClientePage() {
       <div className="absolute inset-0 bg-black/60" />
 
       {/* ── Content ── */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-3 py-8 sm:px-4 sm:py-12">
         {/* Logo / brand */}
-        <div className="mb-8 text-center">
+        <div className="mb-5 text-center sm:mb-8">
           <Link href="/" className="inline-block">
-            <p className="font-title text-3xl uppercase tracking-[0.3em] text-amberglow drop-shadow-lg">
+            <p className="font-title text-2xl uppercase tracking-[0.3em] text-amberglow drop-shadow-lg sm:text-3xl">
               Onix Burguer
             </p>
           </Link>
@@ -234,25 +234,26 @@ export default function LoginClientePage() {
           </p>
         </div>
 
-        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black/40 p-8 shadow-amber backdrop-blur-md">
+        {/* Card — full width on tiny screens, capped at md on larger */}
+        <div className="w-full max-w-[92vw] rounded-[1.5rem] border border-white/10 bg-black/40 p-5 shadow-amber backdrop-blur-md xs:rounded-[2rem] sm:max-w-md sm:p-8">
           {/* ── View: Login ── */}
           {view === "login" && (
             <>
-              <div className="mb-6 text-center">
+              <div className="mb-5 text-center sm:mb-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.38em] text-amberglow">
                   Cliente
                 </p>
-                <h1 className="mt-2 font-title text-4xl uppercase tracking-[0.1em] text-cream">
+                <h1 className="mt-1 font-title text-3xl uppercase tracking-[0.1em] text-cream sm:mt-2 sm:text-4xl">
                   Entrar
                 </h1>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-xs text-white/50 sm:text-sm">
                   Acesse seu histórico de pedidos
                 </p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     E-mail ou Telefone
                   </span>
                   <input
@@ -265,7 +266,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Senha
                   </span>
                   <input
@@ -287,16 +288,16 @@ export default function LoginClientePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-1 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2"
                 >
                   {loading ? "Entrando..." : "Entrar"}
                 </button>
               </form>
 
-              <div className="mt-6 space-y-2 text-center text-sm">
+              <div className="mt-5 space-y-2 text-center text-sm sm:mt-6">
                 <button
                   onClick={() => changeView("forgot")}
-                  className="block w-full text-amberglow/60 hover:text-amberglow"
+                  className="block w-full py-1 text-amberglow/60 hover:text-amberglow"
                 >
                   Esqueceu a senha?
                 </button>
@@ -316,21 +317,21 @@ export default function LoginClientePage() {
           {/* ── View: Register ── */}
           {view === "register" && (
             <>
-              <div className="mb-6 text-center">
+              <div className="mb-5 text-center sm:mb-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.38em] text-amberglow">
                   Cliente
                 </p>
-                <h1 className="mt-2 font-title text-4xl uppercase tracking-[0.1em] text-cream">
+                <h1 className="mt-1 font-title text-3xl uppercase tracking-[0.1em] text-cream sm:mt-2 sm:text-4xl">
                   Criar conta
                 </h1>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-xs text-white/50 sm:text-sm">
                   Cadastre-se e acompanhe seus pedidos
                 </p>
               </div>
 
-              <form onSubmit={handleRegister} className="space-y-4">
+              <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Nome completo *
                   </span>
                   <input
@@ -343,7 +344,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     E-mail
                   </span>
                   <input
@@ -357,7 +358,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Telefone (WhatsApp) *
                   </span>
                   <input
@@ -365,12 +366,13 @@ export default function LoginClientePage() {
                     onChange={(e) => setRegPhone(formatPhone(e.target.value))}
                     placeholder="(21) 99999-9999"
                     autoComplete="tel"
+                    inputMode="tel"
                     className={inputCls}
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Senha *
                   </span>
                   <input
@@ -384,7 +386,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Confirmar senha *
                   </span>
                   <input
@@ -406,13 +408,13 @@ export default function LoginClientePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-1 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2"
                 >
                   {loading ? "Criando conta..." : "Criar conta"}
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-sm text-white/30">
+              <p className="mt-5 text-center text-sm text-white/30 sm:mt-6">
                 Já tem conta?{" "}
                 <button
                   onClick={() => changeView("login")}
@@ -427,14 +429,14 @@ export default function LoginClientePage() {
           {/* ── View: Forgot password ── */}
           {view === "forgot" && (
             <>
-              <div className="mb-6 text-center">
+              <div className="mb-5 text-center sm:mb-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.38em] text-amberglow">
                   Recuperar senha
                 </p>
-                <h1 className="mt-2 font-title text-4xl uppercase tracking-[0.1em] text-cream">
+                <h1 className="mt-1 font-title text-3xl uppercase tracking-[0.1em] text-cream sm:mt-2 sm:text-4xl">
                   {forgotSent ? "Código enviado" : "Esqueceu a senha?"}
                 </h1>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-xs text-white/50 sm:text-sm">
                   {forgotSent
                     ? forgotMethod === "both"
                       ? "Código enviado para seu e-mail e WhatsApp"
@@ -446,9 +448,9 @@ export default function LoginClientePage() {
               </div>
 
               {!forgotSent ? (
-                <form onSubmit={handleForgot} className="space-y-4">
+                <form onSubmit={handleForgot} className="space-y-3 sm:space-y-4">
                   <label className="block">
-                    <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                    <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                       E-mail ou Telefone
                     </span>
                     <input
@@ -468,24 +470,24 @@ export default function LoginClientePage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-2 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-1 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2"
                   >
                     {loading ? "Enviando..." : "Enviar código"}
                   </button>
                 </form>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {success && (
                     <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-300">
                       {success}
                     </div>
                   )}
                   {forgotCode && (
-                    <div className="rounded-2xl border border-amberglow/30 bg-amberglow/10 px-4 py-4 text-center">
-                      <p className="text-xs uppercase tracking-[0.3em] text-amberglow mb-2">
+                    <div className="rounded-2xl border border-amberglow/30 bg-amberglow/10 px-4 py-3 text-center sm:py-4">
+                      <p className="mb-2 text-xs uppercase tracking-[0.3em] text-amberglow">
                         {forgotMethod === "both" ? "Código (e-mail simulado)" : "Código de verificação"}
                       </p>
-                      <p className="font-title text-3xl tracking-[0.5em] text-cream">{forgotCode}</p>
+                      <p className="font-title text-2xl tracking-[0.5em] text-cream sm:text-3xl">{forgotCode}</p>
                       <p className="mt-2 text-xs text-white/45">Válido por 15 minutos</p>
                     </div>
                   )}
@@ -494,7 +496,7 @@ export default function LoginClientePage() {
                       if (forgotCode) setResetCode(forgotCode);
                       changeView("reset");
                     }}
-                    className="w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d]"
+                    className="w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] active:scale-95"
                   >
                     Inserir código
                   </button>
@@ -505,14 +507,14 @@ export default function LoginClientePage() {
                       setForgotMethod("");
                       setSuccess("");
                     }}
-                    className="w-full rounded-full border border-white/10 px-6 py-3 text-sm text-cream/60 transition hover:bg-white/5"
+                    className="w-full rounded-full border border-white/10 px-6 py-3 text-sm text-cream/60 transition hover:bg-white/5 active:scale-95"
                   >
                     Reenviar código
                   </button>
                 </div>
               )}
 
-              <p className="mt-6 text-center text-sm text-white/30">
+              <p className="mt-5 text-center text-sm text-white/30 sm:mt-6">
                 Lembrou a senha?{" "}
                 <button
                   onClick={() => changeView("login")}
@@ -527,21 +529,21 @@ export default function LoginClientePage() {
           {/* ── View: Reset password ── */}
           {view === "reset" && (
             <>
-              <div className="mb-6 text-center">
+              <div className="mb-5 text-center sm:mb-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.38em] text-amberglow">
                   Nova senha
                 </p>
-                <h1 className="mt-2 font-title text-4xl uppercase tracking-[0.1em] text-cream">
+                <h1 className="mt-1 font-title text-3xl uppercase tracking-[0.1em] text-cream sm:mt-2 sm:text-4xl">
                   Redefinir
                 </h1>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-xs text-white/50 sm:text-sm">
                   Insira o código recebido e sua nova senha
                 </p>
               </div>
 
-              <form onSubmit={handleReset} className="space-y-4">
+              <form onSubmit={handleReset} className="space-y-3 sm:space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Código OTP (6 dígitos)
                   </span>
                   <input
@@ -558,7 +560,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Nova senha
                   </span>
                   <input
@@ -572,7 +574,7 @@ export default function LoginClientePage() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-white/45">
+                  <span className="mb-1.5 block text-xs uppercase tracking-[0.25em] text-white/45 sm:mb-2">
                     Confirmar nova senha
                   </span>
                   <input
@@ -600,7 +602,7 @@ export default function LoginClientePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-1 w-full rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2"
                 >
                   {loading ? "Salvando..." : "Redefinir senha"}
                 </button>
@@ -608,7 +610,7 @@ export default function LoginClientePage() {
 
               <button
                 onClick={() => changeView("forgot")}
-                className="mt-4 block w-full text-center text-sm text-amberglow/60 hover:text-amberglow"
+                className="mt-4 block w-full py-1 text-center text-sm text-amberglow/60 hover:text-amberglow"
               >
                 ← Voltar
               </button>
@@ -617,7 +619,7 @@ export default function LoginClientePage() {
         </div>
 
         {/* Footer links */}
-        <div className="mt-6 flex items-center gap-4 text-xs text-white/30">
+        <div className="mt-5 flex items-center gap-4 text-xs text-white/30 sm:mt-6">
           <Link href="/" className="text-amberglow/50 hover:text-amberglow">
             ← Voltar ao site
           </Link>

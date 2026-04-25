@@ -24,7 +24,7 @@ const TEST_ITEMS = [
   ]
 ];
 
-// POST /api/admin/test-order — creates a fake order for testing notifications
+// POST /api/admin/test-order — creates a fake order + financial entry for testing
 export async function POST(_request: NextRequest) {
   try {
     const name = TEST_NAMES[Math.floor(Math.random() * TEST_NAMES.length)];
@@ -32,6 +32,7 @@ export async function POST(_request: NextRequest) {
     const total = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
     const orderId = `TESTE-${Date.now().toString().slice(-6)}`;
     const fulfillmentMode = Math.random() > 0.5 ? "delivery" : "local";
+    const today = new Date().toISOString().split("T")[0];
 
     const { data, error } = await supabaseAdmin
       .from("orders")
@@ -55,6 +56,17 @@ export async function POST(_request: NextRequest) {
     await supabaseAdmin.from("order_status_history").insert({
       order_id: orderId,
       status: "pending"
+    });
+
+    // Auto-create financial income entry linked to this order
+    await supabaseAdmin.from("financial_entries").insert({
+      type: "income",
+      category: "Vendas",
+      description: `Pedido #${orderId} — ${name}`,
+      amount: total,
+      due_date: today,
+      status: "pending",
+      order_id: orderId
     });
 
     return NextResponse.json({ success: true, order: data });
