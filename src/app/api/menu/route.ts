@@ -1,0 +1,91 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+
+// GET /api/menu
+export async function GET() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("menu_items")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("category", { ascending: true });
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, items: data });
+  } catch (err) {
+    console.error("GET /api/menu error:", err);
+    return NextResponse.json({ success: false, error: "Erro ao listar cardápio." }, { status: 500 });
+  }
+}
+
+// POST /api/menu — create item
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, name, description, price, category, image, active, option_groups, sort_order } = body;
+
+    if (!id || !name || price === undefined || !category) {
+      return NextResponse.json({ success: false, error: "Campos obrigatórios: id, name, price, category." }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("menu_items")
+      .insert({ id, name, description, price, category, image, active: active ?? true, option_groups: option_groups ?? [], sort_order: sort_order ?? 0 })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, item: data });
+  } catch (err) {
+    console.error("POST /api/menu error:", err);
+    return NextResponse.json({ success: false, error: "Erro ao criar item." }, { status: 500 });
+  }
+}
+
+// PATCH /api/menu — update item
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "id é obrigatório." }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("menu_items")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, item: data });
+  } catch (err) {
+    console.error("PATCH /api/menu error:", err);
+    return NextResponse.json({ success: false, error: "Erro ao atualizar item." }, { status: 500 });
+  }
+}
+
+// DELETE /api/menu?id=xxx
+export async function DELETE(request: NextRequest) {
+  try {
+    const id = request.nextUrl.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "id é obrigatório." }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin.from("menu_items").delete().eq("id", id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE /api/menu error:", err);
+    return NextResponse.json({ success: false, error: "Erro ao remover item." }, { status: 500 });
+  }
+}

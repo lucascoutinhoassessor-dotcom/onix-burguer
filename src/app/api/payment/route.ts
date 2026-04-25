@@ -1,8 +1,9 @@
-﻿import { randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import type { CartItem } from "@/components/cart-context";
 import { normalizeText, splitName, type CustomerData } from "@/lib/checkout";
+import { supabaseAdmin } from "@/lib/supabase";
 
 type FulfillmentMode = "entrega" | "retirada" | "local";
 type PaymentMethod = "pix" | "credit_card";
@@ -206,6 +207,29 @@ export async function POST(request: NextRequest) {
     });
 
     const { qrCode, qrCodeBase64 } = extractPixData(payment);
+
+    // Persist order in Supabase (non-blocking — failures don't abort checkout)
+    try {
+      const orderStatus = payment.status === "approved" ? "confirmed" : "pending";
+      await supabaseAdmin.from("orders").insert({
+        order_id: payment.external_reference || orderId,
+        customer_name: body.customer.name,
+        customer_phone: body.customer.phone,
+        customer_email: body.customer.email ?? null,
+        items: body.items,
+        total: body.total,
+        status: orderStatus,
+        payment_method: body.paymentMethod,
+        fulfillment_mode: body.fulfillmentMode,
+        payment_id: String(payment.id)
+      });
+      await supabaseAdmin.from("order_status_history").insert({
+        order_id: payment.external_reference || orderId,
+        status: orderStatus
+      });
+    } catch (dbErr) {
+      console.error("Supabase order save failed (non-critical):", dbErr);
+    }
 
     return NextResponse.json({
       success: true,
