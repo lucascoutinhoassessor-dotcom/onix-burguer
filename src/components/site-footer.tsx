@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const links = [
+const socialLinks = [
   { label: "WhatsApp", href: "https://wa.me/5521965565600" },
   { label: "Instagram", href: "#inicio" },
   {
@@ -9,10 +9,15 @@ const links = [
   }
 ];
 
+const accountLinks = [
+  { label: "Minha Conta", href: "/minha-conta" },
+  { label: "Entrar / Cadastrar", href: "/login" }
+];
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-white/10 bg-[#050505]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr] lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-8">
         <div className="space-y-4">
           <p className="font-title text-3xl uppercase tracking-[0.14em] text-cream">Onix Burguer Artesanal</p>
           <p className="max-w-md text-sm leading-7 text-white/60">
@@ -35,7 +40,7 @@ export function SiteFooter() {
             <p>Av. José Mendonça de Campos, 955 - Loja 07</p>
             <p>Colubandê Mall · Colubandê · São Gonçalo/RJ</p>
             <div className="flex flex-wrap gap-3 pt-2">
-              {links.map((link) => (
+              {socialLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
@@ -47,6 +52,21 @@ export function SiteFooter() {
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amberglow">Conta</p>
+          <div className="flex flex-col gap-2">
+            {accountLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-sm text-white/60 transition hover:text-amberglow"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

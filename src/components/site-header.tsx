@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart-context";
 
 const navigation = [
@@ -15,6 +16,14 @@ const navigation = [
 export function SiteHeader() {
   const pathname = usePathname();
   const { itemCount, openCart } = useCart();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/customer/auth")
+      .then((r) => r.json())
+      .then((data: { customer?: unknown }) => setIsLoggedIn(!!data.customer))
+      .catch(() => setIsLoggedIn(false));
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-obsidian/80 backdrop-blur-xl">
@@ -42,6 +51,13 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
+          <Link
+            href={isLoggedIn ? "/minha-conta" : "/login"}
+            className="hidden rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:inline-flex sm:items-center sm:px-4 sm:py-3 sm:text-sm"
+          >
+            {isLoggedIn ? "Minha Conta" : "Entrar"}
+          </Link>
+
           <button
             type="button"
             onClick={openCart}

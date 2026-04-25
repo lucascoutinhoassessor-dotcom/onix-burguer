@@ -142,9 +142,13 @@ export default function LoginClientePage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-white/30">
+          <div className="mt-6 flex items-center justify-center gap-4 text-xs text-white/30">
+            <Link href="/" className="text-amberglow/60 hover:text-amberglow">
+              ← Voltar ao site
+            </Link>
+            <span>·</span>
             <Link href="/cardapio" className="text-amberglow/60 hover:text-amberglow">
-              Voltar ao cardápio
+              Ver cardápio
             </Link>
           </div>
         </div>
