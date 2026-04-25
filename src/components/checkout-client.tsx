@@ -466,18 +466,18 @@ export function CheckoutClient() {
   }
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-14">
+    <section className="mx-auto grid max-w-7xl gap-6 px-3 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-14">
       <form
         id="onix-card-form"
         onSubmit={handleSubmit}
-        className="space-y-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-amber sm:p-8"
+        className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 shadow-amber sm:space-y-6 sm:p-8"
       >
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.38em] text-amberglow">Checkout</p>
-          <h1 className="font-title text-5xl uppercase tracking-[0.1em] text-cream sm:text-6xl">
+          <h1 className="font-title text-3xl uppercase tracking-[0.08em] text-cream sm:text-5xl sm:tracking-[0.1em] lg:text-6xl">
             Finalizar pedido
           </h1>
-          <p className="max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
+          <p className="max-w-2xl text-xs leading-6 text-white/65 sm:text-sm sm:leading-7">
             Revise os itens, preencha seus dados e conclua o pagamento sem sair do site.
           </p>
         </div>
@@ -723,7 +723,7 @@ export function CheckoutClient() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Resumo</p>
-              <h2 className="mt-2 font-title text-4xl uppercase tracking-[0.08em] text-cream">Seu pedido</h2>
+              <h2 className="mt-2 font-title text-3xl uppercase tracking-[0.06em] text-cream sm:text-4xl sm:tracking-[0.08em]">Seu pedido</h2>
             </div>
             <span className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/55">
               {fulfillmentLabels[fulfillmentMode]}

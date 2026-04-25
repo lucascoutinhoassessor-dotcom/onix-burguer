@@ -51,6 +51,27 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
+          {/* Ícone login/usuário — visível só no mobile */}
+          <Link
+            href={isLoggedIn ? "/minha-conta" : "/login"}
+            aria-label={isLoggedIn ? "Minha conta" : "Entrar"}
+            className="inline-flex items-center justify-center rounded-full border border-white/10 p-2 text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:hidden"
+          >
+            {isLoggedIn ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            )}
+          </Link>
+
+          {/* Link texto login/usuário — visível só em sm+ */}
           <Link
             href={isLoggedIn ? "/minha-conta" : "/login"}
             className="hidden rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:inline-flex sm:items-center sm:px-4 sm:py-3 sm:text-sm"
@@ -58,10 +79,28 @@ export function SiteHeader() {
             {isLoggedIn ? "Minha Conta" : "Entrar"}
           </Link>
 
+          {/* Botão carrinho */}
           <button
             type="button"
             onClick={openCart}
-            className="relative rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:px-4 sm:py-3 sm:text-sm"
+            className="relative inline-flex items-center justify-center rounded-full border border-white/10 p-2 text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:hidden"
+            aria-label="Abrir carrinho"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            {itemCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-amberglow px-1 text-[9px] font-bold text-obsidian">
+                {itemCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={openCart}
+            className="relative hidden rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-all duration-300 hover:border-amberglow/35 hover:text-amberglow hover:shadow-lg hover:shadow-amber-500/20 sm:inline-flex sm:items-center sm:px-4 sm:py-3 sm:text-sm"
             aria-label="Abrir carrinho"
           >
             Carrinho
