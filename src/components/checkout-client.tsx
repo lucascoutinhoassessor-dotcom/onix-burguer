@@ -110,6 +110,11 @@ export function CheckoutClient() {
   const [cardError, setCardError] = useState("");
   const [formError, setFormError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMsg, setCouponMsg] = useState<{ text: string; valid: boolean } | null>(null);
+  const [appliedPromoId, setAppliedPromoId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<
     Pick<
       ConfirmationData,
@@ -283,6 +288,47 @@ export function CheckoutClient() {
     return "";
   }
 
+  const finalTotal = Math.max(0, total - couponDiscount);
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponMsg(null);
+    try {
+      const res = await fetch("/api/promotions/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.trim(), total })
+      });
+      const data = (await res.json()) as {
+        valid: boolean;
+        discount?: number;
+        error?: string;
+        promotion?: { id: string; name: string };
+      };
+      if (data.valid && data.discount !== undefined) {
+        setCouponDiscount(data.discount);
+        setAppliedPromoId(data.promotion?.id ?? null);
+        setCouponMsg({ text: `Cupom aplicado: -R$ ${data.discount.toFixed(2)}`, valid: true });
+      } else {
+        setCouponDiscount(0);
+        setAppliedPromoId(null);
+        setCouponMsg({ text: data.error ?? "Cupom inválido", valid: false });
+      }
+    } catch {
+      setCouponMsg({ text: "Erro ao validar cupom", valid: false });
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCouponCode("");
+    setCouponDiscount(0);
+    setAppliedPromoId(null);
+    setCouponMsg(null);
+  }
+
   function saveConfirmation(data: ConfirmationData) {
     window.localStorage.setItem("onix-burguer-last-order", JSON.stringify(data));
   }
@@ -296,7 +342,9 @@ export function CheckoutClient() {
         fulfillmentMode,
         customer,
         items,
-        total
+        total: finalTotal,
+        couponCode: appliedPromoId ? couponCode : undefined,
+        discount: couponDiscount > 0 ? couponDiscount : undefined
       })
     });
 
@@ -315,7 +363,7 @@ export function CheckoutClient() {
       fulfillmentMode,
       customer,
       items,
-      total,
+      total: finalTotal,
       pixQrCode: payload.pixQrCode,
       pixQrCodeBase64: payload.pixQrCodeBase64,
       createdAt: new Date().toISOString()
@@ -354,7 +402,7 @@ export function CheckoutClient() {
         fulfillmentMode,
         customer,
         items,
-        total,
+        total: finalTotal,
         card: {
           token: cardData.token,
           issuerId: cardData.issuerId ? Number(cardData.issuerId) : undefined,
@@ -382,7 +430,7 @@ export function CheckoutClient() {
       fulfillmentMode,
       customer,
       items,
-      total,
+      total: finalTotal,
       createdAt: new Date().toISOString()
     };
 
@@ -527,6 +575,47 @@ export function CheckoutClient() {
         ) : null}
 
         <section className="rounded-[1.6rem] border border-white/10 bg-black/20 p-4 sm:p-5">
+          <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Cupom de desconto</p>
+          {couponDiscount > 0 ? (
+            <div className="mt-3 flex items-center justify-between rounded-2xl border border-amberglow/30 bg-amberglow/5 px-4 py-3">
+              <div>
+                <p className="font-mono text-sm font-semibold text-amberglow">{couponCode}</p>
+                <p className="text-xs text-white/50">Desconto: -{formatCurrency(couponDiscount)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={removeCoupon}
+                className="rounded-full border border-red-500/20 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
+              >
+                Remover
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex gap-2">
+              <input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="CÓDIGO DO CUPOM"
+                className="flex-1 rounded-2xl border border-white/10 bg-[#0b0b0b] px-4 py-3 font-mono text-sm text-cream uppercase outline-none transition placeholder:text-white/25 focus:border-amberglow/50"
+              />
+              <button
+                type="button"
+                onClick={applyCoupon}
+                disabled={couponLoading || !couponCode.trim()}
+                className="rounded-2xl border border-amberglow/30 bg-amberglow/10 px-4 py-3 text-sm font-medium text-amberglow transition hover:bg-amberglow/20 disabled:opacity-50"
+              >
+                {couponLoading ? "..." : "Aplicar"}
+              </button>
+            </div>
+          )}
+          {couponMsg && !couponDiscount && (
+            <p className={`mt-2 text-xs ${couponMsg.valid ? "text-green-400" : "text-red-400"}`}>
+              {couponMsg.text}
+            </p>
+          )}
+        </section>
+
+        <section className="rounded-[1.6rem] border border-white/10 bg-black/20 p-4 sm:p-5">
           <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Forma de pagamento</p>
           <div className="mt-4 grid gap-2 md:grid-cols-2">
             <ToggleCard
@@ -614,7 +703,11 @@ export function CheckoutClient() {
           disabled={processing || items.length === 0 || (paymentMethod === "credit_card" && !cardReady)}
           className="flex w-full items-center justify-center rounded-full bg-amberglow px-6 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-obsidian transition hover:bg-[#ffcb7d] disabled:cursor-not-allowed disabled:bg-amberglow/50"
         >
-          {processing ? "Processando pagamento..." : paymentMethod === "pix" ? "Gerar Pix" : "Pagar com cartão"}
+          {processing
+            ? "Processando pagamento..."
+            : paymentMethod === "pix"
+            ? `Gerar Pix — ${formatCurrency(finalTotal)}`
+            : `Pagar ${formatCurrency(finalTotal)}`}
         </button>
 
         {pixData?.orderId ? (
@@ -672,9 +765,15 @@ export function CheckoutClient() {
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
+            {couponDiscount > 0 && (
+              <div className="flex items-center justify-between text-green-400">
+                <span>Desconto (cupom)</span>
+                <span>-{formatCurrency(couponDiscount)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between font-semibold text-cream">
               <span>Total</span>
-              <span className="text-lg text-amberglow">{formatCurrency(total)}</span>
+              <span className="text-lg text-amberglow">{formatCurrency(finalTotal)}</span>
             </div>
           </div>
         </div>

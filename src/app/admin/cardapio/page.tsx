@@ -20,6 +20,7 @@ type FormState = {
   category: string;
   image: string;
   active: boolean;
+  uploadMode: "url" | "file";
 };
 
 const EMPTY_FORM: FormState = {
@@ -29,7 +30,8 @@ const EMPTY_FORM: FormState = {
   price: "",
   category: "hamburgueres",
   image: "",
-  active: true
+  active: true,
+  uploadMode: "url"
 };
 
 function ItemRow({
@@ -105,6 +107,24 @@ export default function AdminCardapioPage() {
   const [saving, setSaving] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [importing, setImporting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileUpload(file: File) {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (data.url) {
+        setForm((f) => ({ ...f, image: data.url! }));
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function loadItems() {
     try {
@@ -136,7 +156,8 @@ export default function AdminCardapioPage() {
       price: String(item.price),
       category: item.category,
       image: item.image ?? "",
-      active: item.active
+      active: item.active,
+      uploadMode: "url"
     });
     setEditingId(item.id);
     setShowForm(true);
@@ -416,13 +437,64 @@ export default function AdminCardapioPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">URL DA IMAGEM</label>
-                <input
-                  value={form.image}
-                  onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
-                />
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">IMAGEM</label>
+                <div className="mb-2 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, uploadMode: "url" }))}
+                    className={`rounded-lg px-3 py-1 text-xs transition ${
+                      form.uploadMode === "url"
+                        ? "bg-amberglow/20 text-amberglow"
+                        : "text-cream/40 hover:bg-white/5"
+                    }`}
+                  >
+                    URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, uploadMode: "file" }))}
+                    className={`rounded-lg px-3 py-1 text-xs transition ${
+                      form.uploadMode === "file"
+                        ? "bg-amberglow/20 text-amberglow"
+                        : "text-cream/40 hover:bg-white/5"
+                    }`}
+                  >
+                    Upload
+                  </button>
+                </div>
+                {form.uploadMode === "url" ? (
+                  <input
+                    value={form.image}
+                    onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                    placeholder="https://..."
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-cream/70 file:mr-3 file:rounded file:border-0 file:bg-amberglow/20 file:px-2 file:py-1 file:text-xs file:text-amberglow"
+                    />
+                    {uploading && (
+                      <p className="text-xs text-cream/40">Enviando imagem...</p>
+                    )}
+                    {form.image && !uploading && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={form.image}
+                          alt="Preview"
+                          className="h-12 w-12 rounded-lg object-cover opacity-80"
+                        />
+                        <p className="truncate text-xs text-green-400">Upload concluído</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

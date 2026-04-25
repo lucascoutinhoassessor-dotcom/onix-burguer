@@ -63,3 +63,60 @@ export type DbMenuItem = {
   sort_order: number;
   created_at: string;
 };
+
+// Role types
+export type EmployeeRole = "owner" | "manager" | "staff";
+
+export type DbEmployee = {
+  id: string;
+  email: string;
+  name: string;
+  password_hash: string;
+  role: EmployeeRole;
+  active: boolean;
+  created_at: string;
+};
+
+export type DbPromotion = {
+  id: string;
+  name: string;
+  type: "percent" | "fixed" | "free_shipping";
+  value: number;
+  code: string | null;
+  min_order: number;
+  start_at: string | null;
+  end_at: string | null;
+  active: boolean;
+  uses_count: number;
+  max_uses: number | null;
+  created_at: string;
+};
+
+export type DbFinancialEntry = {
+  id: string;
+  type: "income" | "expense";
+  category: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  status: "pending" | "paid" | "overdue";
+  created_at: string;
+};
+
+export type DbInventoryItem = {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  min_quantity: number;
+  cost_price: number;
+  created_at: string;
+};
+
+export type DbCustomerAccount = {
+  id: string;
+  phone: string;
+  name: string;
+  email: string | null;
+  created_at: string;
+};
