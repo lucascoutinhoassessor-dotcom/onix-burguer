@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { DbOrder, OrderStatus } from "@/lib/supabase";
+import type { DbOrder } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/checkout";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { playDoorbell } from "@/lib/audio";
 
 const NAV_ITEMS = [
   {
@@ -251,108 +253,29 @@ function SidebarNav({ collapsed }: { collapsed: boolean }) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [newOrderCount, setNewOrderCount] = useState(0);
 
-  // Popup state
-  const [pendingOrders, setPendingOrders] = useState<DbOrder[]>([]);
-  const [showPopup, setShowPopup] = useState(false);
-  const seenOrderIdsRef = useRef<Set<string>>(new Set());
-  const soundedOrderIdsRef = useRef<Set<string>>(new Set());
-  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bellAudioRef = useRef<HTMLAudioElement | null>(null);
+  // All notification state + actions from the hook
+  const {
+    pendingOrders,
+    showPopup,
+    setShowPopup,
+    handleAccept,
+    handleCancel,
+    handleDismiss,
+  } = useOrderNotifications();
 
-  // Preload doorbell audio on mount
+  const newOrderCount = pendingOrders.length;
+
+  // Toca a campainha SEMPRE que o popup aparece (novos pedidos, recheck após dismiss, ou reload)
   useEffect(() => {
-    bellAudioRef.current = new Audio('/audio/audio de campainha.mp3');
-    bellAudioRef.current.preload = 'auto';
-    bellAudioRef.current.volume = 1.0;
-  }, []);
-
-  function playDoorbell() {
-    try {
-      const audio = bellAudioRef.current;
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-      }
-    } catch {
-      // audio not available / blocked
+    if (showPopup && pendingOrders.length > 0) {
+      playDoorbell();
     }
-  }
+  }, [showPopup]);
 
-  const handleLogout = useCallback(async () => {
+  async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/admin/login");
-  }, [router]);
-
-  const checkPendingOrders = useCallback(async () => {
-    try {
-      const res = await fetch("/api/orders?status=pending&limit=50");
-      const data = (await res.json()) as { orders?: DbOrder[]; total?: number };
-      const pending = data.orders ?? [];
-
-      setNewOrderCount(pending.length);
-
-      // Play sound for brand-new orders
-      let playedSound = false;
-      for (const o of pending) {
-        if (!soundedOrderIdsRef.current.has(o.id)) {
-          soundedOrderIdsRef.current.add(o.id);
-          if (!playedSound) {
-            playDoorbell();
-            playedSound = true;
-          }
-        }
-        seenOrderIdsRef.current.add(o.id);
-      }
-
-      setPendingOrders(pending);
-      if (pending.length > 0) setShowPopup(true);
-    } catch {
-      // silent
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Poll for pending orders every 30 seconds
-  useEffect(() => {
-    checkPendingOrders();
-    const interval = setInterval(checkPendingOrders, 30000);
-    return () => clearInterval(interval);
-  }, [checkPendingOrders]);
-
-  // Hide popup when no more pending
-  useEffect(() => {
-    if (pendingOrders.length === 0) setShowPopup(false);
-  }, [pendingOrders]);
-
-  async function handleAcceptFromPopup(orderId: string) {
-    await fetch("/api/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: orderId, status: "preparing" as OrderStatus })
-    });
-    setPendingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
-    setNewOrderCount((c) => Math.max(0, c - 1));
-  }
-
-  async function handleCancelFromPopup(orderId: string) {
-    await fetch("/api/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: orderId, status: "cancelled" as OrderStatus })
-    });
-    setPendingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
-    setNewOrderCount((c) => Math.max(0, c - 1));
-  }
-
-  function handleDismissPopup() {
-    setShowPopup(false);
-    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
-    // Re-check (and re-show) after 30s if still pending
-    dismissTimerRef.current = setTimeout(() => {
-      checkPendingOrders();
-    }, 30000);
   }
 
   return (
@@ -361,9 +284,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {showPopup && pendingOrders.length > 0 && (
         <NewOrderPopup
           orders={pendingOrders}
-          onAccept={handleAcceptFromPopup}
-          onCancel={handleCancelFromPopup}
-          onDismiss={handleDismissPopup}
+          onAccept={handleAccept}
+          onCancel={handleCancel}
+          onDismiss={handleDismiss}
         />
       )}
 
