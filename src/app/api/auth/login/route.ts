@@ -15,17 +15,29 @@ export async function POST(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "onix-admin-secret");
 
     // 1. Try admin_users (legacy, full owner access)
-    const { data: adminUser } = await supabaseAdmin
+    const { data: adminUser, error: adminError } = await supabaseAdmin
       .from("admin_users")
       .select("id, email, password_hash")
       .eq("email", normalizedEmail)
       .single();
 
+    if (adminError && adminError.code !== "PGRST116") {
+      // PGRST116 = row not found — expected when user is not in admin_users
+      console.error("[login] admin_users query error:", adminError);
+    }
+
     if (adminUser) {
       const valid = await bcrypt.compare(password, adminUser.password_hash);
-      if (!valid) return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
+      if (!valid) {
+        console.warn("[login] admin_users: invalid password for", normalizedEmail);
+        return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
+      }
 
-      const token = await new SignJWT({ id: adminUser.id, email: adminUser.email, role: "owner" })
+      const token = await new SignJWT({
+        id: adminUser.id,
+        email: adminUser.email,
+        role: "owner"
+      })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
         .setExpirationTime("24h")
@@ -43,13 +55,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Try employees table (role-based + per-employee permissions)
-    const { data: employee } = await supabaseAdmin
+    const { data: employee, error: employeeError } = await supabaseAdmin
       .from("employees")
       .select("id, email, name, password_hash, role, active, permissions")
       .eq("email", normalizedEmail)
       .single();
 
+    if (employeeError && employeeError.code !== "PGRST116") {
+      console.error("[login] employees query error:", employeeError);
+    }
+
     if (!employee) {
+      console.warn("[login] user not found in admin_users or employees:", normalizedEmail);
       return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
     }
 
@@ -58,7 +75,10 @@ export async function POST(request: NextRequest) {
     }
 
     const valid = await bcrypt.compare(password, employee.password_hash);
-    if (!valid) return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
+    if (!valid) {
+      console.warn("[login] employees: invalid password for", normalizedEmail);
+      return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
+    }
 
     const jwtPayload: Record<string, unknown> = {
       id: employee.id,
@@ -87,7 +107,7 @@ export async function POST(request: NextRequest) {
     });
     return response;
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("[login] Unexpected error:", err);
     return NextResponse.json({ error: "Erro interno no servidor." }, { status: 500 });
   }
 }
