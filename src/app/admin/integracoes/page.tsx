@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { DbIntegration } from "@/lib/supabase";
 
 type PlatformConfig = {
@@ -47,8 +47,8 @@ const PLATFORMS: PlatformConfig[] = [
   },
   {
     id: "whatsapp",
-    name: "WhatsApp Business",
-    description: "Comunicação direta com clientes via API oficial",
+    name: "WhatsApp Business API",
+    description: "API oficial Meta — envio em massa, templates e automação",
     logo: "💬",
     hasApiKey: true,
     hasApiSecret: true,
@@ -66,6 +66,192 @@ type IntegrationForm = {
 
 const EMPTY_FORM: IntegrationForm = { api_key: "", api_secret: "", webhook_url: "", active: false };
 
+type WAStatus = "disconnected" | "initializing" | "qr_ready" | "connected";
+
+type WAState = {
+  status: WAStatus;
+  qrDataUrl: string | null;
+  phoneNumber: string | null;
+  error: string | null;
+};
+
+// ---------------------------------------------------------------------------
+// WhatsApp Web QR Code panel
+// ---------------------------------------------------------------------------
+function WhatsAppWebPanel() {
+  const [wa, setWa] = useState<WAState>({ status: "disconnected", qrDataUrl: null, phoneNumber: null, error: null });
+  const [loading, setLoading] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/whatsapp-web");
+      const data = (await res.json()) as WAState & { success: boolean };
+      setWa({ status: data.status, qrDataUrl: data.qrDataUrl, phoneNumber: data.phoneNumber, error: data.error });
+    } catch {
+      // silent
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  // Poll while initializing or waiting for QR
+  useEffect(() => {
+    if (wa.status === "initializing" || wa.status === "qr_ready") {
+      const interval = setInterval(fetchStatus, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [wa.status, fetchStatus]);
+
+  async function handleConnect() {
+    setLoading(true);
+    try {
+      await fetch("/api/admin/whatsapp-web", { method: "POST" });
+      await fetchStatus();
+      // Start polling
+      const interval = setInterval(async () => {
+        await fetchStatus();
+      }, 3000);
+      setTimeout(() => clearInterval(interval), 120000); // stop after 2min
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setLoading(true);
+    try {
+      await fetch("/api/admin/whatsapp-web", { method: "DELETE" });
+      setWa({ status: "disconnected", qrDataUrl: null, phoneNumber: null, error: null });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const statusLabel: Record<WAStatus, string> = {
+    disconnected: "Desconectado",
+    initializing: "Inicializando...",
+    qr_ready: "Aguardando escaneamento",
+    connected: "Conectado"
+  };
+
+  const statusColor: Record<WAStatus, string> = {
+    disconnected: "border-red-500/30 bg-red-500/10 text-red-400",
+    initializing: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400",
+    qr_ready: "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    connected: "border-green-500/30 bg-green-500/10 text-green-400"
+  };
+
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">📱</span>
+          <div>
+            <h3 className="font-semibold text-cream">WhatsApp Web (QR Code)</h3>
+            <p className="text-xs text-cream/40">
+              Conecte seu WhatsApp pessoal/business via QR Code — sem API paga
+            </p>
+          </div>
+        </div>
+        <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${statusColor[wa.status]}`}>
+          {statusLabel[wa.status]}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        {wa.status === "connected" && (
+          <div className="mb-4 rounded-lg border border-green-500/20 bg-green-500/5 p-3">
+            <p className="text-sm font-medium text-green-400">WhatsApp conectado!</p>
+            {wa.phoneNumber && (
+              <p className="mt-0.5 font-mono text-xs text-green-400/60">+{wa.phoneNumber}</p>
+            )}
+            <p className="mt-1 text-xs text-cream/40">
+              Mensagens de notificação serão enviadas por este número.
+            </p>
+          </div>
+        )}
+
+        {wa.status === "qr_ready" && wa.qrDataUrl && (
+          <div className="mb-4 flex flex-col items-center gap-3">
+            <p className="text-sm text-cream/70">
+              Abra o WhatsApp no seu celular → Menu → Aparelhos conectados → Conectar aparelho
+            </p>
+            <div className="rounded-xl bg-white p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={wa.qrDataUrl} alt="QR Code WhatsApp" className="h-52 w-52" />
+            </div>
+            <p className="text-xs text-cream/30 animate-pulse">Aguardando escaneamento...</p>
+          </div>
+        )}
+
+        {wa.status === "initializing" && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-cream/50">
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-amberglow border-t-transparent" />
+            Iniciando navegador, aguarde...
+          </div>
+        )}
+
+        {wa.error && (
+          <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
+            <p className="font-medium">Erro:</p>
+            <p className="mt-0.5 font-mono break-all">{wa.error}</p>
+            <p className="mt-2 text-cream/30">
+              Certifique-se de ter Google Chrome ou Microsoft Edge instalado.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          {wa.status === "disconnected" && (
+            <button
+              onClick={handleConnect}
+              disabled={loading}
+              className="rounded-lg bg-green-500/15 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/25 disabled:opacity-50"
+            >
+              {loading ? "Aguarde..." : "Conectar via QR Code"}
+            </button>
+          )}
+          {(wa.status === "initializing" || wa.status === "qr_ready") && (
+            <>
+              <button
+                onClick={fetchStatus}
+                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-cream/50 hover:bg-white/5"
+              >
+                Atualizar
+              </button>
+              <button
+                onClick={handleDisconnect}
+                disabled={loading}
+                className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </>
+          )}
+          {wa.status === "connected" && (
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+            >
+              Desconectar
+            </button>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs text-cream/25">
+        Requer Chrome ou Edge instalado no servidor. Funciona melhor em servidores dedicados (Railway, VPS).
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 export default function AdminIntegracoesPage() {
   const [integrations, setIntegrations] = useState<Record<string, DbIntegration>>({});
   const [loading, setLoading] = useState(true);
@@ -150,6 +336,17 @@ export default function AdminIntegracoesPage() {
           {typeof window !== "undefined" ? window.location.origin : "https://seu-dominio.com"}/api/integrations/ifood/webhook
         </p>
         <p className="mt-1 text-xs text-cream/40">Configure este URL no painel do iFood para receber pedidos automaticamente.</p>
+      </div>
+
+      {/* WhatsApp Web QR Code section */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-cream/60 tracking-wider">WHATSAPP WEB</h2>
+        <WhatsAppWebPanel />
+      </div>
+
+      {/* API Integrations */}
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold text-cream/60 tracking-wider">INTEGRAÇÕES VIA API</h2>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

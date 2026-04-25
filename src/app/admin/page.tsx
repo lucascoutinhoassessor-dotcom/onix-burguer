@@ -38,6 +38,8 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({ todayOrders: 0, todayRevenue: 0, preparing: 0, ready: 0 });
   const [recentOrders, setRecentOrders] = useState<DbOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creatingTestOrder, setCreatingTestOrder] = useState(false);
+  const [testOrderMsg, setTestOrderMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   async function loadData() {
     try {
@@ -72,6 +74,26 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function createTestOrder() {
+    setCreatingTestOrder(true);
+    setTestOrderMsg(null);
+    try {
+      const res = await fetch("/api/admin/test-order", { method: "POST" });
+      const data = (await res.json()) as { success: boolean; order?: { order_id: string } };
+      if (data.success) {
+        setTestOrderMsg({ text: `Pedido teste ${data.order?.order_id} criado! Veja em Pedidos.`, ok: true });
+        await loadData();
+      } else {
+        setTestOrderMsg({ text: "Erro ao criar pedido teste.", ok: false });
+      }
+    } catch {
+      setTestOrderMsg({ text: "Erro ao criar pedido teste.", ok: false });
+    } finally {
+      setCreatingTestOrder(false);
+      setTimeout(() => setTestOrderMsg(null), 6000);
+    }
+  }
+
   useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 60000);
@@ -82,10 +104,38 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="font-title text-2xl tracking-wide text-cream">Dashboard</h1>
-        <p className="mt-0.5 text-sm capitalize text-cream/40">{today}</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-title text-2xl tracking-wide text-cream">Dashboard</h1>
+          <p className="mt-0.5 text-sm capitalize text-cream/40">{today}</p>
+        </div>
+
+        {/* Test order button */}
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={createTestOrder}
+            disabled={creatingTestOrder}
+            className="flex items-center gap-2 rounded-lg border border-dashed border-amberglow/40 bg-amberglow/5 px-3 py-2 text-xs font-medium text-amberglow/80 transition hover:border-amberglow/70 hover:bg-amberglow/10 hover:text-amberglow disabled:opacity-50"
+            title="Cria um pedido de teste com status 'Aguardando' para testar as notificações"
+          >
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
+            </svg>
+            {creatingTestOrder ? "Criando..." : "Criar pedido teste"}
+          </button>
+          <p className="text-[10px] text-cream/25">Sem pagamento real • testa notificações</p>
+        </div>
       </div>
+
+      {testOrderMsg && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+          testOrderMsg.ok
+            ? "border-green-500/20 bg-green-500/10 text-green-400"
+            : "border-red-500/20 bg-red-500/10 text-red-400"
+        }`}>
+          {testOrderMsg.text}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex h-48 items-center justify-center text-cream/30">Carregando...</div>
