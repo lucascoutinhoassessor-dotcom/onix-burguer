@@ -15,6 +15,7 @@ export type OrderStatus =
   | "confirmed"
   | "preparing"
   | "ready"
+  | "saiu_para_entrega"
   | "delivered"
   | "cancelled";
 
@@ -23,6 +24,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   confirmed: "Confirmado",
   preparing: "Em preparo",
   ready: "Pronto",
+  saiu_para_entrega: "Saiu para entrega",
   delivered: "Entregue",
   cancelled: "Cancelado"
 };
@@ -32,6 +34,7 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   confirmed: "text-blue-400 bg-blue-400/10 border-blue-400/30",
   preparing: "text-orange-400 bg-orange-400/10 border-orange-400/30",
   ready: "text-green-400 bg-green-400/10 border-green-400/30",
+  saiu_para_entrega: "text-purple-400 bg-purple-400/10 border-purple-400/30",
   delivered: "text-gray-400 bg-gray-400/10 border-gray-400/30",
   cancelled: "text-red-400 bg-red-400/10 border-red-400/30"
 };
@@ -65,7 +68,7 @@ export type DbMenuItem = {
 };
 
 // Role types
-export type EmployeeRole = "owner" | "manager" | "staff";
+export type EmployeeRole = "owner" | "manager" | "staff" | "motoboy";
 
 export type DbEmployee = {
   id: string;
@@ -74,6 +77,9 @@ export type DbEmployee = {
   password_hash: string;
   role: EmployeeRole;
   active: boolean;
+  cpf: string | null;
+  cnh: string | null;
+  document_photo_url: string | null;
   created_at: string;
 };
 
@@ -92,6 +98,18 @@ export type DbPromotion = {
   created_at: string;
 };
 
+export type DbMarketingCampaign = {
+  id: string;
+  type: "individual" | "mass";
+  target: string | null;
+  filters: unknown;
+  message: string;
+  status: "draft" | "sent" | "failed";
+  sent_at: string | null;
+  delivered_count: number;
+  created_at: string;
+};
+
 export type DbFinancialEntry = {
   id: string;
   type: "income" | "expense";
@@ -100,6 +118,17 @@ export type DbFinancialEntry = {
   amount: number;
   due_date: string;
   status: "pending" | "paid" | "overdue";
+  created_at: string;
+};
+
+export type DbSupplier = {
+  id: string;
+  name: string;
+  legal_name: string | null;
+  phone: string | null;
+  cnpj_cpf: string | null;
+  email: string | null;
+  address: string | null;
   created_at: string;
 };
 
@@ -113,10 +142,25 @@ export type DbInventoryItem = {
   created_at: string;
 };
 
+export type CustomerOrigin = "site" | "manual" | "ifood" | "api";
+
 export type DbCustomerAccount = {
   id: string;
   phone: string;
   name: string;
   email: string | null;
+  origin: CustomerOrigin;
+  registered_at: string;
+  last_order_at: string | null;
+  created_at: string;
+};
+
+export type DbIntegration = {
+  id: string;
+  platform: string;
+  api_key: string | null;
+  api_secret: string | null;
+  webhook_url: string | null;
+  active: boolean;
   created_at: string;
 };

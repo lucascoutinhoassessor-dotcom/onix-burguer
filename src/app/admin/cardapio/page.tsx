@@ -265,15 +265,13 @@ export default function AdminCardapioPage() {
           <p className="mt-0.5 text-sm text-cream/40">{items.length} itens cadastrados</p>
         </div>
         <div className="flex items-center gap-2">
-          {items.length === 0 && (
-            <button
-              onClick={handleImportLocal}
-              disabled={importing}
-              className="rounded-lg border border-amberglow/30 px-3 py-1.5 text-xs text-amberglow/70 transition hover:bg-amberglow/10 disabled:opacity-50"
-            >
-              {importing ? "Importando..." : "Importar cardápio atual"}
-            </button>
-          )}
+          <button
+            onClick={handleImportLocal}
+            disabled={importing}
+            className="rounded-lg border border-amberglow/30 px-3 py-1.5 text-xs text-amberglow/70 transition hover:bg-amberglow/10 disabled:opacity-50"
+          >
+            {importing ? "Importando..." : "Importar cardápio atual"}
+          </button>
           <button
             onClick={openCreate}
             className="rounded-lg bg-amberglow/20 px-3 py-1.5 text-xs font-medium text-amberglow transition hover:bg-amberglow/30"

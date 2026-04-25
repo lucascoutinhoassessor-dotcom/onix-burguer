@@ -12,11 +12,12 @@ const STATUS_OPTIONS: { value: "all" | OrderStatus; label: string }[] = [
   { value: "confirmed", label: "Confirmado" },
   { value: "preparing", label: "Em preparo" },
   { value: "ready", label: "Pronto" },
+  { value: "saiu_para_entrega", label: "Saiu para entrega" },
   { value: "delivered", label: "Entregue" },
   { value: "cancelled", label: "Cancelado" }
 ];
 
-const STATUS_FLOW: OrderStatus[] = ["pending", "confirmed", "preparing", "ready", "delivered"];
+const STATUS_FLOW: OrderStatus[] = ["pending", "confirmed", "preparing", "ready", "saiu_para_entrega", "delivered"];
 
 function buildWhatsAppCustomerMessage(order: DbOrder, newStatus: OrderStatus): string {
   const statusMessages: Record<OrderStatus, string> = {
@@ -24,6 +25,7 @@ function buildWhatsAppCustomerMessage(order: DbOrder, newStatus: OrderStatus): s
     confirmed: "seu pedido foi confirmado e logo entrará em preparo.",
     preparing: "seu pedido está sendo preparado com muito carinho.",
     ready: "seu pedido está pronto! Passaremos para entrega em breve.",
+    saiu_para_entrega: "seu pedido saiu para entrega! Nosso entregador está a caminho.",
     delivered: "seu pedido foi entregue. Obrigado pela preferência!",
     cancelled: "infelizmente seu pedido foi cancelado. Entre em contato conosco."
   };
