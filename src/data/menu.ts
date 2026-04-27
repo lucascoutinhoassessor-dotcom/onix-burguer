@@ -22,6 +22,7 @@ export type MenuItem = {
   price: number;
   category: MenuCategory;
   image: string;
+  active?: boolean;
   optionGroups?: MenuOptionGroup[];
 };
 
