@@ -124,23 +124,25 @@ export function MenuPageClient() {
 
   const itemsByCategory = useMemo(
     () =>
-      menuItems.reduce<Record<MenuCategory, MenuItem[]>>(
-        (accumulator, item) => {
-          // Verificar se a categoria é válida
-          if (item.category && accumulator[item.category]) {
-            accumulator[item.category].push(item);
-          } else {
-            console.warn("Item com categoria inválida:", item);
+      menuItems
+        .filter(item => item.active === true) // Só mostrar produtos ativos
+        .reduce<Record<MenuCategory, MenuItem[]>>(
+          (accumulator, item) => {
+            // Verificar se a categoria é válida
+            if (item.category && accumulator[item.category]) {
+              accumulator[item.category].push(item);
+            } else {
+              console.warn("Item com categoria inválida:", item);
+            }
+            return accumulator;
+          },
+          {
+            hamburgueres: [],
+            acompanhamentos: [],
+            bebidas: [],
+            sobremesas: []
           }
-          return accumulator;
-        },
-        {
-          hamburgueres: [],
-          acompanhamentos: [],
-          bebidas: [],
-          sobremesas: []
-        }
-      ),
+        ),
     [menuItems]
   );
 
