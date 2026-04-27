@@ -133,7 +133,12 @@ export default function AdminCardapioPage() {
     try {
       const res = await fetch("/api/menu");
       const data = (await res.json()) as { items?: DbMenuItem[] };
-      setItems(data.items ?? []);
+      // Garantir que active sempre seja booleano
+      const normalizedItems = (data.items ?? []).map(item => ({
+        ...item,
+        active: item.active === true ? true : false
+      }));
+      setItems(normalizedItems);
     } catch (err) {
       console.error("Load menu error:", err);
     } finally {
