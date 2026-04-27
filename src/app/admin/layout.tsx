@@ -301,93 +301,100 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
 
-      {/* Mobile overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - desktop fixed, mobile overlay drawer */}
-      <aside
-        className={`fixed md:relative z-[9999] md:z-auto flex flex-col border-r border-white/8 bg-coal transition-transform duration-300 h-full w-56 ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } ${collapsed ? "md:w-16" : "md:w-56"}`}
-      >
-        {/* Brand */}
-        <div className="flex h-14 items-center gap-3 border-b border-white/8 px-4">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-amberglow/20">
-            <span className="font-title text-sm text-amberglow">O</span>
-          </div>
-          {!collapsed && (
-            <span className="font-title text-base tracking-widest text-cream/90">ONIX</span>
+      {/* Login page — render without admin layout */}
+      {isLoginPage ? (
+        <>{children}</>
+      ) : (
+        <>
+          {/* Mobile overlay */}
+          {mobileMenuOpen && (
+            <div
+              className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
           )}
-        </div>
 
-        {/* Nav */}
-        <div className="flex-1 overflow-y-auto">
-          <SidebarNav collapsed={collapsed} onItemClick={() => setMobileMenuOpen(false)} />
-        </div>
-
-        {/* Collapse toggle - apenas desktop */}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="hidden md:flex h-12 items-center justify-center border-t border-white/8 text-cream/30 transition hover:text-cream/60"
-          title={collapsed ? "Expandir" : "Recolher"}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className={`h-4 w-4 fill-current transition-transform ${collapsed ? "rotate-180" : ""}`}
+          {/* Sidebar - desktop fixed, mobile overlay drawer */}
+          <aside
+            className={`fixed md:relative z-[9999] md:z-auto flex flex-col border-r border-white/8 bg-coal transition-transform duration-300 h-full w-56 ${
+              mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            } ${collapsed ? "md:w-16" : "md:w-56"}`}
           >
-            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
-          </svg>
-        </button>
-      </aside>
+            {/* Brand */}
+            <div className="flex h-14 items-center gap-3 border-b border-white/8 px-4">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-amberglow/20">
+                <span className="font-title text-sm text-amberglow">O</span>
+              </div>
+              {!collapsed && (
+                <span className="font-title text-base tracking-widest text-cream/90">ONIX</span>
+              )}
+            </div>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/8 bg-coal/50 px-4 md:px-6 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            {/* Hamburger button - mobile only */}
+            {/* Nav */}
+            <div className="flex-1 overflow-y-auto">
+              <SidebarNav collapsed={collapsed} onItemClick={() => setMobileMenuOpen(false)} />
+            </div>
+
+            {/* Collapse toggle - apenas desktop */}
             <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-cream/60 hover:bg-white/5 hover:text-cream"
-              aria-label="Abrir menu"
+              onClick={() => setCollapsed((c) => !c)}
+              className="hidden md:flex h-12 items-center justify-center border-t border-white/8 text-cream/30 transition hover:text-cream/60"
+              title={collapsed ? "Expandir" : "Recolher"}
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-4 w-4 fill-current transition-transform ${collapsed ? "rotate-180" : ""}`}
+              >
+                <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
               </svg>
             </button>
-            <h2 className="text-sm font-semibold text-cream/70">Painel Administrativo</h2>
-            {!isLoginPage && newOrderCount > 0 && (
-              <button
-                onClick={() => setShowPopup(true)}
-                className="flex items-center gap-1.5 rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amberglow" />
-                </span>
-                {newOrderCount} novo{newOrderCount !== 1 ? "s" : ""}
-              </button>
-            )}
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-cream/40 transition hover:bg-white/5 hover:text-cream/70"
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-              <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-            </svg>
-            Sair
-          </button>
-        </header>
+          </aside>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-obsidian">{children}</main>
-      </div>
+          {/* Main area */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Header */}
+            <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/8 bg-coal/50 px-4 md:px-6 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                {/* Hamburger button - mobile only */}
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-cream/60 hover:bg-white/5 hover:text-cream"
+                  aria-label="Abrir menu"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+                  </svg>
+                </button>
+                <h2 className="text-sm font-semibold text-cream/70">Painel Administrativo</h2>
+                {newOrderCount > 0 && (
+                  <button
+                    onClick={() => setShowPopup(true)}
+                    className="flex items-center gap-1.5 rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
+                  >
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amberglow opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-amberglow" />
+                    </span>
+                    {newOrderCount} novo{newOrderCount !== 1 ? "s" : ""}
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-cream/40 transition hover:bg-white/5 hover:text-cream/70"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                </svg>
+                Sair
+              </button>
+            </header>
+
+            {/* Page content */}
+            <main className="flex-1 overflow-y-auto bg-obsidian">{children}</main>
+          </div>
+        </>
+      )}
     </div>
   );
 }
