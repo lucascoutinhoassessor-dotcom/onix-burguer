@@ -206,12 +206,18 @@ export default function AdminCardapioPage() {
   }
 
   async function handleToggle(item: DbMenuItem) {
+    console.log("handleToggle called for item:", item.id, "current active:", item.active);
     try {
+      const body = { id: item.id, active: !item.active };
+      console.log("Sending PATCH request with body:", JSON.stringify(body));
+      
       const res = await fetch("/api/menu", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id, active: !item.active })
+        body: JSON.stringify(body)
       });
+      
+      console.log("PATCH response status:", res.status);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
@@ -220,7 +226,11 @@ export default function AdminCardapioPage() {
         return;
       }
       
+      const responseData = await res.json();
+      console.log("PATCH response data:", JSON.stringify(responseData));
+      
       await loadItems();
+      console.log("Items reloaded after toggle");
     } catch (err) {
       console.error("Toggle error:", err);
       alert("Erro de conexão ao alterar status.");
