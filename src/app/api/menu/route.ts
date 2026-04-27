@@ -59,14 +59,16 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, ...updates } = body;
 
-    console.log("PATCH /api/menu - Request body:", JSON.stringify(body));
+    console.log("[API PATCH] Request received:", JSON.stringify(body, null, 2));
+    console.log("[API PATCH] Extracted id:", id);
+    console.log("[API PATCH] Updates to apply:", JSON.stringify(updates, null, 2));
 
     if (!id) {
-      console.log("PATCH /api/menu - Error: id is missing");
+      console.error("[API PATCH] ERROR: id is missing");
       return NextResponse.json({ success: false, error: "id é obrigatório." }, { status: 400 });
     }
 
-    console.log("PATCH /api/menu - Updating item:", id, "with updates:", JSON.stringify(updates));
+    console.log("[API PATCH] Calling Supabase update for id:", id);
 
     const { data, error } = await supabaseAdmin
       .from("menu_items")
@@ -76,14 +78,19 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("PATCH /api/menu - Supabase error:", error);
+      console.error("[API PATCH] Supabase error:", JSON.stringify(error, null, 2));
       throw error;
     }
 
-    console.log("PATCH /api/menu - Success:", JSON.stringify(data));
+    if (!data) {
+      console.error("[API PATCH] ERROR: No data returned from Supabase");
+      return NextResponse.json({ success: false, error: "Item não encontrado ou não atualizado." }, { status: 404 });
+    }
+
+    console.log("[API PATCH] Success - Updated item:", JSON.stringify(data, null, 2));
     return NextResponse.json({ success: true, item: data });
   } catch (err) {
-    console.error("PATCH /api/menu error:", err);
+    console.error("[API PATCH] Unhandled error:", err);
     return NextResponse.json({ success: false, error: "Erro ao atualizar item." }, { status: 500 });
   }
 }

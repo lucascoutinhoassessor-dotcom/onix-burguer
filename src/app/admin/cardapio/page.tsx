@@ -217,10 +217,14 @@ export default function AdminCardapioPage() {
   }
 
   async function handleToggle(item: DbMenuItem) {
-    console.log("handleToggle called for item:", item.id, "current active:", item.active);
+    console.log("[handleToggle] Called for item:", item.id, "| current active:", item.active);
+    console.log("[handleToggle] Full item data:", JSON.stringify(item, null, 2));
+    
     try {
-      const body = { id: item.id, active: !item.active };
-      console.log("Sending PATCH request with body:", JSON.stringify(body));
+      const newActiveState = !item.active;
+      const body = { id: item.id, active: newActiveState };
+      console.log("[handleToggle] New active state will be:", newActiveState);
+      console.log("[handleToggle] Sending PATCH request with body:", JSON.stringify(body, null, 2));
       
       const res = await fetch("/api/menu", {
         method: "PATCH",
@@ -228,22 +232,46 @@ export default function AdminCardapioPage() {
         body: JSON.stringify(body)
       });
       
-      console.log("PATCH response status:", res.status);
+      console.log("[handleToggle] Response status:", res.status);
+      console.log("[handleToggle] Response headers:", JSON.stringify(Object.fromEntries(res.headers.entries())));
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
-        console.error("Toggle error:", errorData);
+        const errorText = await res.text();
+        console.error("[handleToggle] ERROR - Response not OK:", res.status, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || "Erro desconhecido" };
+        }
         alert("Erro ao alterar status: " + (errorData.error || "Erro desconhecido"));
         return;
       }
       
-      const responseData = await res.json();
-      console.log("PATCH response data:", JSON.stringify(responseData));
+      const responseText = await res.text();
+      console.log("[handleToggle] Raw response text:", responseText);
       
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log("[handleToggle] Parsed response data:", JSON.stringify(responseData, null, 2));
+      } catch (e) {
+        console.error("[handleToggle] ERROR parsing JSON response:", e);
+        alert("Erro ao processar resposta do servidor");
+        return;
+      }
+      
+      if (!responseData.success) {
+        console.error("[handleToggle] ERROR - API returned success: false:", responseData.error);
+        alert("Erro ao alterar status: " + (responseData.error || "Erro desconhecido"));
+        return;
+      }
+      
+      console.log("[handleToggle] API call successful, reloading items...");
       await loadItems();
-      console.log("Items reloaded after toggle");
+      console.log("[handleToggle] Items reloaded successfully");
     } catch (err) {
-      console.error("Toggle error:", err);
+      console.error("[handleToggle] Unhandled error:", err);
       alert("Erro de conexão ao alterar status.");
     }
   }

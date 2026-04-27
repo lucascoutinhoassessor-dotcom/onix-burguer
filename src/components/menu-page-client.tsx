@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getDefaultSelections, useCart } from "@/components/cart-context";
-import { menuItems, type MenuCategory, type MenuItem, type MenuOptionGroup } from "@/data/menu";
+import { type MenuCategory, type MenuItem, type MenuOptionGroup } from "@/data/menu";
 
 const categoryLabels: Record<MenuCategory, string> = {
   hamburgueres: "Hambúrgueres",
