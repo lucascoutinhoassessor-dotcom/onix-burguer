@@ -169,7 +169,7 @@ export default function AdminCardapioPage() {
     try {
       const method = editingId ? "PATCH" : "POST";
       const body = {
-        id: form.id.toLowerCase().replace(/\s+/g, "-"),
+        id: editingId ? editingId : form.id.toLowerCase().replace(/\s+/g, "-"),
         name: form.name,
         description: form.description || null,
         price: parseFloat(form.price),
@@ -188,12 +188,18 @@ export default function AdminCardapioPage() {
         body: JSON.stringify(body)
       });
 
-      if (res.ok) {
-        setShowForm(false);
-        await loadItems();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+        console.error("Save error:", errorData);
+        alert("Erro ao salvar: " + (errorData.error || "Erro desconhecido"));
+        return;
       }
+
+      setShowForm(false);
+      await loadItems();
     } catch (err) {
       console.error("Save item error:", err);
+      alert("Erro de conexão ao salvar item.");
     } finally {
       setSaving(false);
     }
@@ -201,14 +207,23 @@ export default function AdminCardapioPage() {
 
   async function handleToggle(item: DbMenuItem) {
     try {
-      await fetch("/api/menu", {
+      const res = await fetch("/api/menu", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, active: !item.active })
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+        console.error("Toggle error:", errorData);
+        alert("Erro ao alterar status: " + (errorData.error || "Erro desconhecido"));
+        return;
+      }
+      
       await loadItems();
     } catch (err) {
       console.error("Toggle error:", err);
+      alert("Erro de conexão ao alterar status.");
     }
   }
 
