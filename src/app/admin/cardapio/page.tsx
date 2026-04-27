@@ -175,6 +175,7 @@ export default function AdminCardapioPage() {
   }
 
   function openEdit(item: DbMenuItem) {
+    console.log("[openEdit] Opening edit for item:", item.id, "| active:", item.active);
     setForm({
       id: item.id,
       name: item.name,
