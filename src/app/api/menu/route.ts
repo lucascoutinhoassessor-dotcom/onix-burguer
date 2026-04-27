@@ -50,9 +50,14 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, ...updates } = body;
 
+    console.log("PATCH /api/menu - Request body:", JSON.stringify(body));
+
     if (!id) {
+      console.log("PATCH /api/menu - Error: id is missing");
       return NextResponse.json({ success: false, error: "id é obrigatório." }, { status: 400 });
     }
+
+    console.log("PATCH /api/menu - Updating item:", id, "with updates:", JSON.stringify(updates));
 
     const { data, error } = await supabaseAdmin
       .from("menu_items")
@@ -61,8 +66,12 @@ export async function PATCH(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("PATCH /api/menu - Supabase error:", error);
+      throw error;
+    }
 
+    console.log("PATCH /api/menu - Success:", JSON.stringify(data));
     return NextResponse.json({ success: true, item: data });
   } catch (err) {
     console.error("PATCH /api/menu error:", err);
