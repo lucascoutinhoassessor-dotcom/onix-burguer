@@ -81,7 +81,27 @@ export function MenuPageClient() {
   const [activeCategory, setActiveCategory] = useState<MenuCategory>("hamburgueres");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selection, setSelection] = useState<SelectedGroupOptions>({});
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const { addItem, openCart } = useCart();
+
+  // Buscar dados da API
+  useEffect(() => {
+    async function loadMenuItems() {
+      try {
+        const res = await fetch("/api/menu");
+        const data = await res.json();
+        if (data.success && data.items) {
+          setMenuItems(data.items);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar cardapio:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMenuItems();
+  }, []);
 
   const itemsByCategory = useMemo(
     () =>
@@ -97,7 +117,7 @@ export function MenuPageClient() {
           sobremesas: []
         }
       ),
-    []
+    [menuItems]
   );
 
   const activeItems = itemsByCategory[activeCategory];
@@ -201,8 +221,13 @@ export function MenuPageClient() {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {activeItems.map((item) => (
+          {loading ? (
+            <div className="flex h-64 items-center justify-center text-white/50">
+              Carregando cardápio...
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {activeItems.map((item) => (
               <article
                 key={item.id}
                 className="card-premium group overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/8 to-white/[0.03] hover:bg-white/[0.08]"
@@ -255,6 +280,7 @@ export function MenuPageClient() {
               </article>
             ))}
           </div>
+          )}
 
           <div className="mt-10 flex flex-col gap-3 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
