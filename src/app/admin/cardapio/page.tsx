@@ -68,7 +68,10 @@ function ItemRow({
       <td className="px-4 py-3 font-semibold text-amberglow">{formatCurrency(Number(item.price))}</td>
       <td className="px-4 py-3">
         <button
-          onClick={() => onToggle(item)}
+          onClick={() => {
+            console.log("[ItemRow] Toggle button clicked for item:", item.id, "active:", item.active);
+            onToggle(item);
+          }}
           className={`rounded-full border px-2 py-0.5 text-xs font-medium transition ${
             item.active
               ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-red-500/10 hover:text-red-400"
