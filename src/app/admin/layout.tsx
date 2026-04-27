@@ -43,6 +43,17 @@ const NAV_ITEMS = [
     )
   },
   {
+    href: "/admin/categorias",
+    label: "Categorias",
+    exact: false,
+    key: "categorias",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2l-5.5 9h11z M12 5.84L13.93 9h-3.87z M17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5z M5 21.5h8v-8H5v8z" />
+      </svg>
+    )
+  },
+  {
     href: "/admin/promocoes",
     label: "Promoções",
     exact: false,

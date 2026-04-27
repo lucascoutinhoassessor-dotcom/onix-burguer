@@ -5,12 +5,11 @@ import { formatCurrency } from "@/lib/checkout";
 import type { DbMenuItem } from "@/lib/supabase";
 import { menuItems as localMenuItems } from "@/data/menu";
 
-const CATEGORIES = [
-  { value: "hamburgueres", label: "Hambúrgueres" },
-  { value: "acompanhamentos", label: "Acompanhamentos" },
-  { value: "bebidas", label: "Bebidas" },
-  { value: "sobremesas", label: "Sobremesas" }
-];
+type Category = {
+  id: string;
+  name: string;
+  sort_order: number;
+};
 
 type FormState = {
   id: string;
@@ -28,7 +27,7 @@ const EMPTY_FORM: FormState = {
   name: "",
   description: "",
   price: "",
-  category: "hamburgueres",
+  category: "",
   image: "",
   active: true,
   uploadMode: "url"
@@ -36,15 +35,19 @@ const EMPTY_FORM: FormState = {
 
 function ItemRow({
   item,
+  categories,
   onEdit,
   onToggle,
   onDelete
 }: {
   item: DbMenuItem;
+  categories: Category[];
   onEdit: (item: DbMenuItem) => void;
   onToggle: (item: DbMenuItem) => void;
   onDelete: (id: string) => void;
 }) {
+  const categoryLabel = categories.find((c) => c.id === item.category)?.name ?? item.category;
+
   return (
     <tr className="border-b border-white/5 hover:bg-white/[0.02]">
       <td className="px-4 py-3">
@@ -62,9 +65,7 @@ function ItemRow({
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-xs capitalize text-cream/50">
-        {CATEGORIES.find((c) => c.value === item.category)?.label ?? item.category}
-      </td>
+      <td className="px-4 py-3 text-xs capitalize text-cream/50">{categoryLabel}</td>
       <td className="px-4 py-3 font-semibold text-amberglow">{formatCurrency(Number(item.price))}</td>
       <td className="px-4 py-3">
         <button
@@ -103,6 +104,7 @@ function ItemRow({
 
 export default function AdminCardapioPage() {
   const [items, setItems] = useState<DbMenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -119,19 +121,19 @@ export default function AdminCardapioPage() {
       const formData = new FormData();
       formData.append("file", file);
       console.log("[handleFileUpload] Sending request to /api/admin/upload");
-      
+
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       console.log("[handleFileUpload] Response status:", res.status);
-      
+
       const data = (await res.json()) as { url?: string; error?: string; method?: string };
       console.log("[handleFileUpload] Response data:", data);
-      
+
       if (data.error) {
         console.error("[handleFileUpload] Error from API:", data.error);
         alert("Erro no upload: " + data.error);
         return;
       }
-      
+
       if (data.url) {
         console.log("[handleFileUpload] Success! URL received:", data.url, "method:", data.method);
         setForm((f) => ({ ...f, image: data.url! }));
@@ -152,7 +154,7 @@ export default function AdminCardapioPage() {
       const res = await fetch("/api/menu");
       const data = (await res.json()) as { items?: DbMenuItem[] };
       // Garantir que active sempre seja booleano
-      const normalizedItems = (data.items ?? []).map(item => ({
+      const normalizedItems = (data.items ?? []).map((item) => ({
         ...item,
         active: item.active === true ? true : false
       }));
@@ -164,12 +166,26 @@ export default function AdminCardapioPage() {
     }
   }
 
+  async function loadCategories() {
+    try {
+      const res = await fetch("/api/categories");
+      const data = (await res.json()) as { categories?: Category[] };
+      setCategories(data.categories ?? []);
+    } catch (err) {
+      console.error("Load categories error:", err);
+    }
+  }
+
   useEffect(() => {
     loadItems();
+    loadCategories();
   }, []);
 
   function openCreate() {
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      category: categories[0]?.id ?? ""
+    });
     setEditingId(null);
     setShowForm(true);
   }
@@ -207,9 +223,7 @@ export default function AdminCardapioPage() {
         category: form.category,
         image: form.image || null,
         active: form.active,
-        option_groups: editingId
-          ? (items.find((i) => i.id === editingId)?.option_groups ?? [])
-          : [],
+        option_groups: editingId ? (items.find((i) => i.id === editingId)?.option_groups ?? []) : [],
         sort_order: 0
       };
 
@@ -246,22 +260,22 @@ export default function AdminCardapioPage() {
   async function handleToggle(item: DbMenuItem) {
     console.log("[handleToggle] Called for item:", item.id, "| current active:", item.active);
     console.log("[handleToggle] Full item data:", JSON.stringify(item, null, 2));
-    
+
     try {
       const newActiveState = !item.active;
       const body = { id: item.id, active: newActiveState };
       console.log("[handleToggle] New active state will be:", newActiveState);
       console.log("[handleToggle] Sending PATCH request with body:", JSON.stringify(body, null, 2));
-      
+
       const res = await fetch("/api/menu", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-      
+
       console.log("[handleToggle] Response status:", res.status);
       console.log("[handleToggle] Response headers:", JSON.stringify(Object.fromEntries(res.headers.entries())));
-      
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error("[handleToggle] ERROR - Response not OK:", res.status, errorText);
@@ -274,10 +288,10 @@ export default function AdminCardapioPage() {
         alert("Erro ao alterar status: " + (errorData.error || "Erro desconhecido"));
         return;
       }
-      
+
       const responseText = await res.text();
       console.log("[handleToggle] Raw response text:", responseText);
-      
+
       let responseData;
       try {
         responseData = JSON.parse(responseText);
@@ -287,13 +301,13 @@ export default function AdminCardapioPage() {
         alert("Erro ao processar resposta do servidor");
         return;
       }
-      
+
       if (!responseData.success) {
         console.error("[handleToggle] ERROR - API returned success: false:", responseData.error);
         alert("Erro ao alterar status: " + (responseData.error || "Erro desconhecido"));
         return;
       }
-      
+
       console.log("[handleToggle] API call successful, reloading items...");
       await loadItems();
       console.log("[handleToggle] Items reloaded successfully");
@@ -344,8 +358,7 @@ export default function AdminCardapioPage() {
     }
   }
 
-  const filtered =
-    categoryFilter === "all" ? items : items.filter((i) => i.category === categoryFilter);
+  const filtered = categoryFilter === "all" ? items : items.filter((i) => i.category === categoryFilter);
 
   return (
     <div className="p-6">
@@ -384,17 +397,17 @@ export default function AdminCardapioPage() {
         >
           Todos
         </button>
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
-            key={cat.value}
-            onClick={() => setCategoryFilter(cat.value)}
+            key={cat.id}
+            onClick={() => setCategoryFilter(cat.id)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              categoryFilter === cat.value
+              categoryFilter === cat.id
                 ? "border-amberglow/50 bg-amberglow/15 text-amberglow"
                 : "border-white/8 text-cream/40 hover:border-white/20 hover:text-cream/60"
             }`}
           >
-            {cat.label}
+            {cat.name}
           </button>
         ))}
       </div>
@@ -432,6 +445,7 @@ export default function AdminCardapioPage() {
                 <ItemRow
                   key={item.id}
                   item={item}
+                  categories={categories}
                   onEdit={openEdit}
                   onToggle={handleToggle}
                   onDelete={handleDelete}
@@ -446,9 +460,7 @@ export default function AdminCardapioPage() {
       {showForm && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-coal p-6 shadow-2xl">
-            <h2 className="mb-5 font-title text-xl text-cream">
-              {editingId ? "Editar Item" : "Novo Item"}
-            </h2>
+            <h2 className="mb-5 font-title text-xl text-cream">{editingId ? "Editar Item" : "Novo Item"}</h2>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -469,9 +481,10 @@ export default function AdminCardapioPage() {
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                     className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
                   >
-                    {CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
+                    {categories.length === 0 && <option value="">Carregando...</option>}
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
@@ -532,9 +545,7 @@ export default function AdminCardapioPage() {
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, uploadMode: "url" }))}
                     className={`rounded-lg px-3 py-1 text-xs transition ${
-                      form.uploadMode === "url"
-                        ? "bg-amberglow/20 text-amberglow"
-                        : "text-cream/40 hover:bg-white/5"
+                      form.uploadMode === "url" ? "bg-amberglow/20 text-amberglow" : "text-cream/40 hover:bg-white/5"
                     }`}
                   >
                     URL
@@ -543,9 +554,7 @@ export default function AdminCardapioPage() {
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, uploadMode: "file" }))}
                     className={`rounded-lg px-3 py-1 text-xs transition ${
-                      form.uploadMode === "file"
-                        ? "bg-amberglow/20 text-amberglow"
-                        : "text-cream/40 hover:bg-white/5"
+                      form.uploadMode === "file" ? "bg-amberglow/20 text-amberglow" : "text-cream/40 hover:bg-white/5"
                     }`}
                   >
                     Upload
@@ -569,16 +578,10 @@ export default function AdminCardapioPage() {
                       }}
                       className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-cream/70 file:mr-3 file:rounded file:border-0 file:bg-amberglow/20 file:px-2 file:py-1 file:text-xs file:text-amberglow"
                     />
-                    {uploading && (
-                      <p className="text-xs text-cream/40">Enviando imagem...</p>
-                    )}
+                    {uploading && <p className="text-xs text-cream/40">Enviando imagem...</p>}
                     {form.image && !uploading && (
                       <div className="flex items-center gap-2">
-                        <img
-                          src={form.image}
-                          alt="Preview"
-                          className="h-12 w-12 rounded-lg object-cover opacity-80"
-                        />
+                        <img src={form.image} alt="Preview" className="h-12 w-12 rounded-lg object-cover opacity-80" />
                         <p className="truncate text-xs text-green-400">Upload concluído</p>
                       </div>
                     )}
