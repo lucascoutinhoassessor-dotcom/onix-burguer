@@ -92,7 +92,12 @@ export function MenuPageClient() {
         const res = await fetch("/api/menu");
         const data = await res.json();
         if (data.success && data.items) {
-          setMenuItems(data.items);
+          // Mapear option_groups (Supabase) para optionGroups (frontend)
+          const mappedItems = data.items.map((item: any) => ({
+            ...item,
+            optionGroups: item.option_groups || []
+          }));
+          setMenuItems(mappedItems);
         }
       } catch (err) {
         console.error("Erro ao carregar cardapio:", err);
