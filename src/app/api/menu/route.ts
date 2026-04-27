@@ -12,7 +12,17 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, items: data });
+    // Retornar com headers para evitar cache
+    return NextResponse.json(
+      { success: true, items: data },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
+    );
   } catch (err) {
     console.error("GET /api/menu error:", err);
     return NextResponse.json({ success: false, error: "Erro ao listar cardápio." }, { status: 500 });
