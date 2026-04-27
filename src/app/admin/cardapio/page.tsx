@@ -110,9 +110,13 @@ export default function AdminCardapioPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [importing, setImporting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   async function handleFileUpload(file: File) {
     console.log("[handleFileUpload] Starting upload for file:", file.name, "size:", file.size, "type:", file.type);
@@ -358,7 +362,23 @@ export default function AdminCardapioPage() {
     }
   }
 
-  const filtered = categoryFilter === "all" ? items : items.filter((i) => i.category === categoryFilter);
+  // Aplicar filtros na lista de produtos
+  const filteredItems = items.filter((item) => {
+    // Filtro por nome (case insensitive)
+    const matchesSearch = searchTerm === "" || 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filtro por categoria
+    const matchesCategory = selectedCategory === "all" || 
+      item.category === selectedCategory;
+    
+    // Filtro por status
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && item.active) || 
+      (statusFilter === "inactive" && !item.active);
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   return (
     <div className="p-6">
@@ -385,39 +405,78 @@ export default function AdminCardapioPage() {
         </div>
       </div>
 
-      {/* Category filter */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          onClick={() => setCategoryFilter("all")}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-            categoryFilter === "all"
-              ? "border-amberglow/50 bg-amberglow/15 text-amberglow"
-              : "border-white/8 text-cream/40 hover:border-white/20 hover:text-cream/60"
-          }`}
-        >
-          Todos
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setCategoryFilter(cat.id)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              categoryFilter === cat.id
-                ? "border-amberglow/50 bg-amberglow/15 text-amberglow"
-                : "border-white/8 text-cream/40 hover:border-white/20 hover:text-cream/60"
-            }`}
+      {/* Filtros */}
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        {/* Campo de busca com ícone de lupa */}
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">BUSCAR</label>
+          <div className="relative">
+            <svg 
+              viewBox="0 0 24 24" 
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 fill-cream/30"
+            >
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nome..."
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+            />
+          </div>
+        </div>
+
+        {/* Filtro por categoria */}
+        <div className="w-40">
+          <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">CATEGORIA</label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
           >
-            {cat.name}
-          </button>
-        ))}
+            <option value="all">Todas</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Filtro por status */}
+        <div className="w-36">
+          <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">STATUS</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
+          >
+            <option value="all">Todos</option>
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Contador de resultados */}
+      <div className="mb-4 text-xs text-cream/40">
+        {filteredItems.length} {filteredItems.length === 1 ? "produto encontrado" : "produtos encontrados"}
+        {(searchTerm || selectedCategory !== "all" || statusFilter !== "all") && (
+          <span className="ml-2 text-cream/30">
+            (filtros aplicados)
+          </span>
+        )}
       </div>
 
       {/* Table */}
       {loading ? (
         <div className="flex h-48 items-center justify-center text-cream/30">Carregando...</div>
-      ) : filtered.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-white/8 text-center">
-          <p className="text-sm text-cream/30">Nenhum item cadastrado</p>
+          <p className="text-sm text-cream/30">
+            {items.length === 0 ? "Nenhum item cadastrado" : "Nenhum produto encontrado com os filtros selecionados"}
+          </p>
           {items.length === 0 && (
             <button
               onClick={handleImportLocal}
@@ -425,6 +484,18 @@ export default function AdminCardapioPage() {
               className="text-xs text-amberglow/60 underline hover:text-amberglow"
             >
               {importing ? "Importando..." : "Importar itens do cardápio estático"}
+            </button>
+          )}
+          {(searchTerm || selectedCategory !== "all" || statusFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedCategory("all");
+                setStatusFilter("all");
+              }}
+              className="text-xs text-amberglow/60 underline hover:text-amberglow"
+            >
+              Limpar filtros
             </button>
           )}
         </div>
@@ -441,7 +512,7 @@ export default function AdminCardapioPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
+              {filteredItems.map((item) => (
                 <ItemRow
                   key={item.id}
                   item={item}
