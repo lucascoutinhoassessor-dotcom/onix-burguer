@@ -164,7 +164,11 @@ export default function AdminCardapioPage() {
   }
 
   async function handleSave() {
-    if (!form.id || !form.name || !form.price || !form.category) return;
+    console.log("handleSave called - form data:", { id: form.id, name: form.name, price: form.price, category: form.category });
+    if (!form.id || !form.name || !form.price || !form.category) {
+      console.log("handleSave - Validation failed: missing required fields");
+      return;
+    }
     setSaving(true);
     try {
       const method = editingId ? "PATCH" : "POST";
@@ -182,11 +186,15 @@ export default function AdminCardapioPage() {
         sort_order: 0
       };
 
+      console.log("handleSave - Sending request:", method, "/api/menu, body:", JSON.stringify(body));
+
       const res = await fetch("/api/menu", {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+
+      console.log("handleSave - Response status:", res.status);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
@@ -194,6 +202,9 @@ export default function AdminCardapioPage() {
         alert("Erro ao salvar: " + (errorData.error || "Erro desconhecido"));
         return;
       }
+
+      const responseData = await res.json();
+      console.log("handleSave - Success:", JSON.stringify(responseData));
 
       setShowForm(false);
       await loadItems();
