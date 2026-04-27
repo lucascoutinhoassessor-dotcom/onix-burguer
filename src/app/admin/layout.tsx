@@ -150,7 +150,7 @@ function NewOrderPopup({ orders, onAccept, onCancel, onDismiss }: NewOrderPopupP
   }
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl border border-amberglow/40 bg-coal shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
@@ -290,7 +290,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex bg-obsidian font-body">
+    <div className="fixed inset-0 flex bg-obsidian font-body">
       {/* Global new-order popup — visible on ALL admin pages (exceto login) */}
       {!isLoginPage && showPopup && pendingOrders.length > 0 && (
         <NewOrderPopup
@@ -309,14 +309,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Mobile overlay */}
           {mobileMenuOpen && (
             <div
-              className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
+              className="fixed inset-0 z-40 bg-black/50 md:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
           )}
 
           {/* Sidebar - desktop fixed, mobile overlay drawer */}
           <aside
-            className={`fixed md:relative z-[9999] md:z-auto flex flex-col border-r border-white/8 bg-coal transition-transform duration-300 h-full w-56 ${
+            className={`fixed md:relative z-50 md:z-auto flex flex-col border-r border-white/8 bg-coal transition-transform duration-300 h-full w-56 ${
               mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             } ${collapsed ? "md:w-16" : "md:w-56"}`}
           >
