@@ -25,9 +25,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id, name, description, price, category, image, active, option_groups, sort_order } = body;
 
+    console.log("POST /api/menu - Request body:", JSON.stringify(body));
+
     if (!id || !name || price === undefined || !category) {
+      console.log("POST /api/menu - Validation failed:", { id, name, price, category });
       return NextResponse.json({ success: false, error: "Campos obrigatórios: id, name, price, category." }, { status: 400 });
     }
+
+    console.log("POST /api/menu - Inserting item with id:", id);
 
     const { data, error } = await supabaseAdmin
       .from("menu_items")
@@ -35,8 +40,12 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("POST /api/menu - Supabase error:", error);
+      throw error;
+    }
 
+    console.log("POST /api/menu - Success:", JSON.stringify(data));
     return NextResponse.json({ success: true, item: data });
   } catch (err) {
     console.error("POST /api/menu error:", err);
