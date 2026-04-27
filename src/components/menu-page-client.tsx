@@ -91,13 +91,17 @@ export function MenuPageClient() {
       try {
         const res = await fetch("/api/menu");
         const data = await res.json();
+        console.log("API response:", data);
         if (data.success && data.items) {
           // Mapear option_groups (Supabase) para optionGroups (frontend)
           const mappedItems = data.items.map((item: any) => ({
             ...item,
             optionGroups: item.option_groups || []
           }));
+          console.log("Mapped items:", mappedItems);
           setMenuItems(mappedItems);
+        } else {
+          console.error("API returned no items:", data);
         }
       } catch (err) {
         console.error("Erro ao carregar cardapio:", err);
@@ -112,7 +116,12 @@ export function MenuPageClient() {
     () =>
       menuItems.reduce<Record<MenuCategory, MenuItem[]>>(
         (accumulator, item) => {
-          accumulator[item.category].push(item);
+          // Verificar se a categoria é válida
+          if (item.category && accumulator[item.category]) {
+            accumulator[item.category].push(item);
+          } else {
+            console.warn("Item com categoria inválida:", item);
+          }
           return accumulator;
         },
         {
