@@ -164,7 +164,7 @@ export default function AdminCardapioPage() {
       price: String(item.price),
       category: item.category,
       image: item.image ?? "",
-      active: item.active,
+      active: item.active === true ? true : false, // Garantir booleano
       uploadMode: "url"
     });
     setEditingId(item.id);
