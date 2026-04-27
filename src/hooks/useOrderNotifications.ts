@@ -31,7 +31,7 @@ function addSoundedIds(ids: string[]) {
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
-export function useOrderNotifications() {
+export function useOrderNotifications(enabled = true) {
   const [pendingOrders, setPendingOrders] = useState<DbOrder[]>([]);
   const [showPopup, setShowPopup] = useState(false);
 
@@ -70,6 +70,7 @@ export function useOrderNotifications() {
 
   // --- BroadcastChannel setup (once) ---
   useEffect(() => {
+    if (!enabled) return;
     if (typeof BroadcastChannel === "undefined") return;
     const bc = new BroadcastChannel(CHANNEL_NAME);
     bcRef.current = bc;
@@ -78,7 +79,7 @@ export function useOrderNotifications() {
       bc.close();
       bcRef.current = null;
     };
-  }, [handleBroadcast]);
+  }, [enabled, handleBroadcast]);
 
   // --- Core polling function ---
   const checkPendingOrders = useCallback(async () => {
@@ -114,6 +115,7 @@ export function useOrderNotifications() {
 
   // --- Supabase Realtime – instant notification on INSERT ---
   useEffect(() => {
+    if (!enabled) return;
     const ch = supabase
       .channel("admin-layout-orders")
       .on(
@@ -133,14 +135,15 @@ export function useOrderNotifications() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [checkPendingOrders]);
+  }, [enabled, checkPendingOrders]);
 
   // --- Safety-net polling (Realtime handles the real-time part) ---
   useEffect(() => {
+    if (!enabled) return;
     checkPendingOrders();
     const id = setInterval(checkPendingOrders, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [checkPendingOrders]);
+  }, [enabled, checkPendingOrders]);
 
   // --- Auto-hide popup when list empties ---
   useEffect(() => {

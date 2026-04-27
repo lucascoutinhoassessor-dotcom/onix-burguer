@@ -252,9 +252,13 @@ function SidebarNav({ collapsed }: { collapsed: boolean }) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  // All notification state + actions from the hook
+  // Detect login page
+  const isLoginPage = pathname === "/admin/login";
+
+  // All notification state + actions from the hook (disabled on login page)
   const {
     pendingOrders,
     showPopup,
@@ -262,16 +266,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     handleAccept,
     handleCancel,
     handleDismiss,
-  } = useOrderNotifications();
+  } = useOrderNotifications(!isLoginPage);
 
   const newOrderCount = pendingOrders.length;
 
-  // Toca a campainha SEMPRE que o popup aparece (novos pedidos, recheck após dismiss, ou reload)
+  // Toca a campainha SEMPRE que o popup aparece (exceto na tela de login)
   useEffect(() => {
-    if (showPopup && pendingOrders.length > 0) {
+    if (showPopup && pendingOrders.length > 0 && !isLoginPage) {
       playDoorbell();
     }
-  }, [showPopup]);
+  }, [showPopup, pendingOrders.length, isLoginPage]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -280,8 +284,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="fixed inset-0 z-[9999] flex bg-obsidian font-body">
-      {/* Global new-order popup — visible on ALL admin pages */}
-      {showPopup && pendingOrders.length > 0 && (
+      {/* Global new-order popup — visible on ALL admin pages (exceto login) */}
+      {!isLoginPage && showPopup && pendingOrders.length > 0 && (
         <NewOrderPopup
           orders={pendingOrders}
           onAccept={handleAccept}
@@ -332,7 +336,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/8 bg-coal/50 px-6 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-semibold text-cream/70">Painel Administrativo</h2>
-            {newOrderCount > 0 && (
+            {!isLoginPage && newOrderCount > 0 && (
               <button
                 onClick={() => setShowPopup(true)}
                 className="flex items-center gap-1.5 rounded-full bg-amberglow/20 px-2 py-0.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
