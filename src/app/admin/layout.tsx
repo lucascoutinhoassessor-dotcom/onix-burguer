@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -224,7 +224,7 @@ function NewOrderPopup({ orders, onAccept, onCancel, onDismiss }: NewOrderPopupP
   );
 }
 
-function SidebarNav({ collapsed }: { collapsed: boolean }) {
+function SidebarNav({ collapsed, onItemClick }: { collapsed: boolean; onItemClick?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -235,6 +235,7 @@ function SidebarNav({ collapsed }: { collapsed: boolean }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onItemClick}
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
               active
                 ? "bg-amberglow/15 text-amberglow"
@@ -254,9 +255,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Detect login page
   const isLoginPage = pathname === "/admin/login";
+
+  // Fechar menu mobile ao navegar
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // All notification state + actions from the hook (disabled on login page)
   const {
@@ -294,11 +301,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
 
-      {/* Sidebar */}
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - desktop fixed, mobile overlay drawer */}
       <aside
-        className={`flex flex-shrink-0 flex-col border-r border-white/8 bg-coal transition-all duration-300 ${
-          collapsed ? "w-16" : "w-56"
-        }`}
+        className={`fixed md:relative z-[9999] md:z-auto flex flex-col border-r border-white/8 bg-coal transition-transform duration-300 h-full w-56 ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        } ${collapsed ? "md:w-16" : "md:w-56"}`}
       >
         {/* Brand */}
         <div className="flex h-14 items-center gap-3 border-b border-white/8 px-4">
@@ -312,13 +327,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav collapsed={collapsed} />
+          <SidebarNav collapsed={collapsed} onItemClick={() => setMobileMenuOpen(false)} />
         </div>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle - apenas desktop */}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="flex h-12 items-center justify-center border-t border-white/8 text-cream/30 transition hover:text-cream/60"
+          className="hidden md:flex h-12 items-center justify-center border-t border-white/8 text-cream/30 transition hover:text-cream/60"
           title={collapsed ? "Expandir" : "Recolher"}
         >
           <svg
@@ -333,8 +348,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/8 bg-coal/50 px-6 backdrop-blur-sm">
+        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/8 bg-coal/50 px-4 md:px-6 backdrop-blur-sm">
           <div className="flex items-center gap-3">
+            {/* Hamburger button - mobile only */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-cream/60 hover:bg-white/5 hover:text-cream"
+              aria-label="Abrir menu"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+              </svg>
+            </button>
             <h2 className="text-sm font-semibold text-cream/70">Painel Administrativo</h2>
             {!isLoginPage && newOrderCount > 0 && (
               <button
