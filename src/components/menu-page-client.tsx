@@ -89,24 +89,32 @@ export function MenuPageClient() {
   useEffect(() => {
     async function loadMenuItems() {
       try {
-        const res = await fetch("/api/menu");
+        // Adicionar timestamp para evitar cache
+        const res = await fetch(`/api/menu?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
         const data = await res.json();
-        console.log("API response:", data);
+        console.log("[Cardapio] API response:", data);
         if (data.success && data.items) {
           // Mapear option_groups (Supabase) para optionGroups (frontend)
           const mappedItems = data.items.map((item: any) => ({
             ...item,
             optionGroups: item.option_groups || [],
             // Garantir que a imagem nunca seja null
-            image: item.image || "https://via.placeholder.com/640x480?text=Sem+Imagem"
+            image: item.image || "https://via.placeholder.com/640x480?text=Sem+Imagem",
+            // Garantir que active seja booleano
+            active: item.active === true
           }));
-          console.log("Mapped items:", mappedItems);
+          console.log("[Cardapio] Mapped items:", mappedItems.length, "items");
           setMenuItems(mappedItems);
         } else {
-          console.error("API returned no items:", data);
+          console.error("[Cardapio] API returned no items:", data);
         }
       } catch (err) {
-        console.error("Erro ao carregar cardapio:", err);
+        console.error("[Cardapio] Erro ao carregar cardapio:", err);
       } finally {
         setLoading(false);
       }
