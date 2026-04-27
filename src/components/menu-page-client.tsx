@@ -96,7 +96,9 @@ export function MenuPageClient() {
           // Mapear option_groups (Supabase) para optionGroups (frontend)
           const mappedItems = data.items.map((item: any) => ({
             ...item,
-            optionGroups: item.option_groups || []
+            optionGroups: item.option_groups || [],
+            // Garantir que a imagem nunca seja null
+            image: item.image || "https://via.placeholder.com/640x480?text=Sem+Imagem"
           }));
           console.log("Mapped items:", mappedItems);
           setMenuItems(mappedItems);
