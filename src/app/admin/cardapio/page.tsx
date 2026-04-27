@@ -113,17 +113,35 @@ export default function AdminCardapioPage() {
   const [uploading, setUploading] = useState(false);
 
   async function handleFileUpload(file: File) {
+    console.log("[handleFileUpload] Starting upload for file:", file.name, "size:", file.size, "type:", file.type);
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      console.log("[handleFileUpload] Sending request to /api/admin/upload");
+      
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-      const data = (await res.json()) as { url?: string; error?: string };
+      console.log("[handleFileUpload] Response status:", res.status);
+      
+      const data = (await res.json()) as { url?: string; error?: string; method?: string };
+      console.log("[handleFileUpload] Response data:", data);
+      
+      if (data.error) {
+        console.error("[handleFileUpload] Error from API:", data.error);
+        alert("Erro no upload: " + data.error);
+        return;
+      }
+      
       if (data.url) {
+        console.log("[handleFileUpload] Success! URL received:", data.url, "method:", data.method);
         setForm((f) => ({ ...f, image: data.url! }));
+      } else {
+        console.error("[handleFileUpload] No URL in response");
+        alert("Erro: URL da imagem não recebida");
       }
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("[handleFileUpload] Upload error:", err);
+      alert("Erro ao fazer upload da imagem");
     } finally {
       setUploading(false);
     }
