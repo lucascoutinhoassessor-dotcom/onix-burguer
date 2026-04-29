@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { FeaturedItemsSection } from "@/components/FeaturedItemModal";
+import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 import { menuItems } from "@/data/menu";
 
 const reviews = [
@@ -324,6 +325,7 @@ export default function Home() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatingButton />
     </main>
   );
 }

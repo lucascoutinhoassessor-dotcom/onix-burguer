@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Bebas_Neue } from "next/font/google";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-context";
-import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 import "./globals.css";
 
 const bebas = Bebas_Neue({
@@ -40,7 +39,6 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
-          <WhatsAppFloatingButton />
         </CartProvider>
       </body>
     </html>

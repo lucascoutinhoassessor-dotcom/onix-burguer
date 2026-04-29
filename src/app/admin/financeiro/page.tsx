@@ -27,6 +27,15 @@ function calcularLiquido(bruto: number, taxa: number, tipo: "%" | "R$"): number 
   return bruto - taxa;
 }
 
+// Calcular taxa reversa (quando só tem taxa, não tem bruto)
+function calcularTaxaReversa(taxa: number, tipo: "%" | "R$"): number {
+  if (tipo === "%") {
+    // Se taxa é 10%, o valor bruto seria taxa / 0.10
+    return taxa;
+  }
+  return taxa;
+}
+
 // Mock data para simulação
 const mockLancamentos: Lancamento[] = [
   { id: "1", data: "2025-01-20", descricao: "Venda #1234", categoria: "Venda", canal: "iFood", metodoPagamento: "iFood", valorBruto: 150, valorLiquido: calcularLiquido(150, 12, "%"), status: "A Receber", tipo: "Entrada", taxaValor: 12, taxaTipo: "%" },
@@ -185,19 +194,22 @@ export default function FinanceiroPage() {
 
   // Salvar novo lançamento
   const handleSave = () => {
-    if (!formDescricao || !formCategoria || !formValor || !formDataVencimento) {
+    if (!formDescricao || !formCategoria || !formDataVencimento) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
 
-    const bruto = parseFloat(formValor.replace(/[^\d,]/g, "").replace(",", "."));
-    if (isNaN(bruto) || bruto <= 0) {
-      alert("Valor inválido");
+    const bruto = formValor ? parseFloat(formValor.replace(/[^\d,]/g, "").replace(",", ".")) : 0;
+    const taxa = parseFloat(formTaxaValor) || 0;
+    
+    // Se não tem valor bruto mas tem taxa, usar taxa como valor
+    const valorFinal = bruto > 0 ? bruto : (taxa > 0 ? taxa : 0);
+    const liquido = bruto > 0 ? calcularLiquido(bruto, taxa, formTaxaTipo) : (taxa > 0 ? taxa : 0);
+
+    if (valorFinal <= 0) {
+      alert("Informe pelo menos o Valor Bruto ou a Taxa");
       return;
     }
-
-    const taxa = parseFloat(formTaxaValor) || 0;
-    const liquido = calcularLiquido(bruto, taxa, formTaxaTipo);
 
     const novoLancamento: Lancamento = {
       id: Date.now().toString(),
@@ -206,7 +218,7 @@ export default function FinanceiroPage() {
       categoria: formCategoria as any,
       canal: "Outros",
       metodoPagamento: "Pix",
-      valorBruto: bruto,
+      valorBruto: valorFinal,
       valorLiquido: Math.max(0, liquido),
       status: formStatus,
       tipo: formTipo,
