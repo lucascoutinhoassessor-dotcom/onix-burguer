@@ -45,6 +45,8 @@ export type DbOrder = {
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
+  customer_address?: string | null;
+  customer_neighborhood?: string | null;
   items: unknown;
   total: number;
   status: OrderStatus;
