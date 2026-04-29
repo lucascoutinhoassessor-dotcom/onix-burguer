@@ -11,6 +11,7 @@ type FormState = {
   active: boolean;
   cpf: string;
   cnh: string;
+  phone: string;
   document_photo_url: string;
   uploadMode: "url" | "file";
   permissions: EmployeePermission[] | null;
@@ -46,6 +47,7 @@ const EMPTY_FORM: FormState = {
   active: true,
   cpf: "",
   cnh: "",
+  phone: "",
   document_photo_url: "",
   uploadMode: "url",
   permissions: null,
@@ -168,6 +170,7 @@ export default function AdminColaboradoresPage() {
       role: emp.role,
       active: emp.active,
       cpf: emp.cpf ?? "",
+      phone: emp.phone ?? "",
       cnh: emp.cnh ?? "",
       document_photo_url: emp.document_photo_url ?? "",
       uploadMode: "url",
@@ -237,6 +240,7 @@ export default function AdminColaboradoresPage() {
         role: form.role,
         active: form.active,
         cpf: form.cpf || null,
+        phone: form.role === "motoboy" ? (form.phone || null) : null,
         cnh: form.role === "motoboy" ? (form.cnh || null) : null,
         document_photo_url: form.role === "motoboy" ? (form.document_photo_url || null) : null,
         permissions: form.useCustomPermissions ? (form.permissions ?? null) : null
@@ -343,7 +347,14 @@ export default function AdminColaboradoresPage() {
                             className="h-7 w-7 rounded-full object-cover opacity-70"
                           />
                         )}
-                        {emp.name}
+                        <div>
+                          {emp.name}
+                          {emp.role === "motoboy" && emp.phone && (
+                            <div className="text-xs text-purple-400">
+                              📱 {emp.phone}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-cream/50">{emp.email}</td>
@@ -486,6 +497,19 @@ export default function AdminColaboradoresPage() {
                 <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
                   <p className="mb-3 text-xs font-medium text-purple-400">Dados do Motoboy</p>
                   <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
+                        WHATSAPP *
+                      </label>
+                      <input
+                        value={form.phone}
+                        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                        placeholder="(21) 99999-9999"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                      />
+                      <p className="mt-1 text-xs text-cream/30">Usado para enviar pedidos automaticamente</p>
+                    </div>
+
                     <div>
                       <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
                         CNH (número)

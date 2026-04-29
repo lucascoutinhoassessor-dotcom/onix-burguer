@@ -92,6 +92,7 @@ export type DbEmployee = {
   active: boolean;
   cpf: string | null;
   cnh: string | null;
+  phone: string | null;
   document_photo_url: string | null;
   permissions: EmployeePermission[] | null;
   created_at: string;
