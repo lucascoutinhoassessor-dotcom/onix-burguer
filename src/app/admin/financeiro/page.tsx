@@ -1,414 +1,570 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { DbFinancialEntry } from "@/lib/supabase";
+import { useEffect, useMemo, useState } from "react";
+import { formatCurrency } from "@/lib/checkout";
+import { useSimulacao } from "@/contexts/simulacao-context";
 
-type FormState = {
-  type: "income" | "expense";
-  category: string;
-  description: string;
-  amount: string;
-  due_date: string;
-  status: "pending" | "paid" | "overdue";
+// Tipo estendido com taxa
+type Lancamento = {
+  id: string;
+  data: string;
+  descricao: string;
+  categoria: string;
+  canal: string;
+  metodoPagamento: string;
+  valorBruto: number;
+  valorLiquido: number;
+  status: "Pago" | "Pendente" | "A Receber";
+  tipo: "Entrada" | "Saída";
+  taxaValor?: number;
+  taxaTipo?: "%" | "R$";
 };
 
-const EMPTY_FORM: FormState = {
-  type: "expense",
-  category: "",
-  description: "",
-  amount: "",
-  due_date: new Date().toISOString().split("T")[0],
-  status: "pending"
-};
-
-const EXPENSE_CATEGORIES = ["Fornecedor", "Aluguel", "Energia", "Água", "Internet", "Salários", "Marketing", "Manutenção", "Outros"];
-const INCOME_CATEGORIES = ["Vendas", "Delivery", "iFood", "Uber Eats", "Outros"];
-
-type Summary = { totalIncome: number; totalExpense: number; balance: number };
-
-function formatCurrency(v: number) {
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+// Função de cálculo de liquido com taxa
+function calcularLiquido(bruto: number, taxa: number, tipo: "%" | "R$"): number {
+  if (tipo === "%") {
+    return bruto - (bruto * (taxa / 100));
+  }
+  return bruto - taxa;
 }
 
-export default function AdminFinanceiroPage() {
-  const [entries, setEntries] = useState<DbFinancialEntry[]>([]);
-  const [summary, setSummary] = useState<Summary>({ totalIncome: 0, totalExpense: 0, balance: 0 });
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [syncing, setSyncing] = useState(false);
-  const [syncMsg, setSyncMsg] = useState("");
+// Mock data para simulação
+const mockLancamentos: Lancamento[] = [
+  { id: "1", data: "2025-01-20", descricao: "Venda #1234", categoria: "Venda", canal: "iFood", metodoPagamento: "iFood", valorBruto: 150, valorLiquido: calcularLiquido(150, 12, "%"), status: "A Receber", tipo: "Entrada", taxaValor: 12, taxaTipo: "%" },
+  { id: "2", data: "2025-01-20", descricao: "Venda #1235", categoria: "Venda", canal: "Balcão", metodoPagamento: "Pix", valorBruto: 89.90, valorLiquido: 89.90, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
+  { id: "3", data: "2025-01-20", descricao: "Embalagens Delivery", categoria: "Embalagens", canal: "Outros", metodoPagamento: "Pix", valorBruto: 250, valorLiquido: 250, status: "Pago", tipo: "Saída" },
+  { id: "4", data: "2025-01-21", descricao: "Venda #1236", categoria: "Venda", canal: "WhatsApp", metodoPagamento: "Dinheiro", valorBruto: 45.00, valorLiquido: 45.00, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
+  { id: "5", data: "2025-01-21", descricao: "Insumos - Carne", categoria: "Insumos", canal: "Outros", metodoPagamento: "Pix", valorBruto: 350, valorLiquido: 350, status: "Pendente", tipo: "Saída" },
+  { id: "6", data: "2025-01-21", descricao: "Taxa iFood", categoria: "Taxas Apps", canal: "iFood", metodoPagamento: "iFood", valorBruto: 18, valorLiquido: 18, status: "Pago", tipo: "Saída" },
+];
 
-  async function load() {
-    try {
-      const params = new URLSearchParams();
-      if (filterType !== "all") params.set("type", filterType);
-      if (filterMonth) params.set("month", filterMonth);
-      const res = await fetch(`/api/admin/financial?${params}`);
-      const data = (await res.json()) as { entries?: DbFinancialEntry[]; summary?: Summary };
-      setEntries(data.entries ?? []);
-      if (data.summary) setSummary(data.summary);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [filterType, filterMonth]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handleSync() {
-    setSyncing(true);
-    setSyncMsg("");
-    try {
-      const res = await fetch("/api/admin/financial", { method: "PUT" });
-      const data = (await res.json()) as { synced?: number; message?: string; error?: string };
-      setSyncMsg(data.message ?? data.error ?? "Sincronização concluída.");
-      if ((data.synced ?? 0) > 0) await load();
-    } catch {
-      setSyncMsg("Erro ao sincronizar.");
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  function openCreate() {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-    setError("");
-    setShowForm(true);
-  }
-
-  function openEdit(e: DbFinancialEntry) {
-    setForm({
-      type: e.type,
-      category: e.category,
-      description: e.description,
-      amount: String(e.amount),
-      due_date: e.due_date,
-      status: e.status
-    });
-    setEditingId(e.id);
-    setError("");
-    setShowForm(true);
-  }
-
-  async function handleSave() {
-    if (!form.category || !form.description || !form.amount || !form.due_date) {
-      setError("Preencha todos os campos obrigatórios");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      const method = editingId ? "PATCH" : "POST";
-      const body = {
-        ...(editingId ? { id: editingId } : {}),
-        ...form,
-        amount: parseFloat(form.amount)
-      };
-      const res = await fetch("/api/admin/financial", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) {
-        const d = await res.json() as { error?: string };
-        setError(d.error ?? "Erro ao salvar");
-        return;
-      }
-      setShowForm(false);
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Excluir este lançamento?")) return;
-    await fetch(`/api/admin/financial?id=${id}`, { method: "DELETE" });
-    await load();
-  }
-
-  async function markPaid(e: DbFinancialEntry) {
-    await fetch("/api/admin/financial", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: e.id, status: "paid" })
-    });
-    await load();
-  }
-
-  const STATUS_LABELS = { pending: "Pendente", paid: "Pago", overdue: "Vencido" };
-  const STATUS_COLORS = {
-    pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-    paid: "text-green-400 bg-green-400/10 border-green-400/30",
-    overdue: "text-red-400 bg-red-400/10 border-red-400/30"
+// Componente Card de Métrica
+function MetricCard({ title, value, trend, trendUp, icon, color }: { 
+  title: string; 
+  value: string; 
+  trend?: string; 
+  trendUp?: boolean;
+  icon: string;
+  color: "green" | "blue" | "red" | "amber";
+}) {
+  const colorClasses = {
+    green: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30",
+    blue: "from-blue-500/20 to-blue-600/5 border-blue-500/30",
+    red: "from-red-500/20 to-red-600/5 border-red-500/30",
+    amber: "from-amber-500/20 to-amber-600/5 border-amber-500/30",
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-title text-2xl tracking-wide text-cream">Financeiro</h1>
-          <p className="mt-0.5 text-sm text-cream/40">{entries.length} lançamentos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Sync button */}
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            title="Verificar pedidos sem lançamento e criar automaticamente"
-            className="flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 disabled:opacity-50"
-          >
-            <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 fill-current ${syncing ? "animate-spin" : ""}`}>
-              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
-            </svg>
-            {syncing ? "Sincronizando..." : "Sincronizar pedidos"}
-          </button>
-          <button
-            onClick={openCreate}
-            className="rounded-lg bg-amberglow/20 px-3 py-1.5 text-xs font-medium text-amberglow hover:bg-amberglow/30"
-          >
-            + Novo lançamento
-          </button>
-        </div>
-      </div>
-
-      {/* Sync result message */}
-      {syncMsg && (
-        <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-300 flex items-center justify-between">
-          <span>{syncMsg}</span>
-          <button onClick={() => setSyncMsg("")} className="text-blue-400/60 hover:text-blue-400 ml-4">✕</button>
-        </div>
-      )}
-
-      {/* Summary cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
-          <p className="text-xs text-cream/40">Receitas pagas</p>
-          <p className="mt-1 text-xl font-semibold text-green-400">{formatCurrency(summary.totalIncome)}</p>
-        </div>
-        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
-          <p className="text-xs text-cream/40">Despesas pagas</p>
-          <p className="mt-1 text-xl font-semibold text-red-400">{formatCurrency(summary.totalExpense)}</p>
-        </div>
-        <div className={`rounded-xl border p-4 ${summary.balance >= 0 ? "border-green-500/20 bg-green-500/5" : "border-red-500/20 bg-red-500/5"}`}>
-          <p className="text-xs text-cream/40">Saldo</p>
-          <p className={`mt-1 text-xl font-semibold ${summary.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {formatCurrency(summary.balance)}
+    <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 ${colorClasses[color]}`}>
+      <div className="relative z-10">
+        <p className="text-xs font-medium tracking-wider text-cream/50 uppercase">{title}</p>
+        <p className="mt-2 text-2xl font-bold text-cream">{value}</p>
+        {trend && (
+          <p className={`mt-1 text-xs ${trendUp ? "text-emerald-400" : "text-red-400"}`}>
+            {trendUp ? "↑" : "↓"} {trend}
           </p>
-        </div>
+        )}
       </div>
+      <span className="absolute -right-2 -top-2 text-6xl opacity-10">{icon}</span>
+    </div>
+  );
+}
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-1">
-          {(["all", "income", "expense"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                filterType === t
-                  ? "border-amberglow/50 bg-amberglow/15 text-amberglow"
-                  : "border-white/8 text-cream/40 hover:border-white/20 hover:text-cream/60"
-              }`}
-            >
-              {t === "all" ? "Todos" : t === "income" ? "Receitas" : "Despesas"}
-            </button>
-          ))}
-        </div>
-        <input
-          type="month"
-          value={filterMonth}
-          onChange={(e) => setFilterMonth(e.target.value)}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-cream outline-none focus:border-amberglow/50"
-        />
+// Componente Gráfico Simples
+function SimpleChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+      <h3 className="mb-4 text-sm font-medium text-cream/70">Vendas Físicas vs Delivery</h3>
+      <div className="flex h-48 items-end gap-4">
+        {data.map((item, i) => {
+          const height = total > 0 ? (item.value / total) * 100 : 0;
+          return (
+            <div key={i} className="flex flex-1 flex-col items-center gap-2">
+              <div 
+                className="w-full rounded-t-lg transition-all duration-500"
+                style={{ 
+                  height: `${Math.max(height, 5)}%`,
+                  backgroundColor: item.color 
+                }}
+              />
+              <span className="text-xs text-cream/50">{item.label}</span>
+              <span className="text-sm font-semibold text-cream">{formatCurrency(item.value)}</span>
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
 
-      {loading ? (
-        <div className="flex h-48 items-center justify-center text-cream/30">Carregando...</div>
-      ) : entries.length === 0 ? (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-white/8 text-sm text-cream/30">
-          Nenhum lançamento encontrado
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-white/8">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/8 bg-white/[0.02]">
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">DESCRIÇÃO</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">CATEGORIA</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">PEDIDO</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">VENCIMENTO</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">VALOR</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">STATUS</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">AÇÕES</th>
+// Componente Principal
+export default function FinanceiroPage() {
+  const { modoSimulacao } = useSimulacao();
+  const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [realData, setRealData] = useState<Lancamento[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filtroData, setFiltroData] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Form state
+  const [formTipo, setFormTipo] = useState<"Entrada" | "Saída">("Saída");
+  const [formDescricao, setFormDescricao] = useState("");
+  const [formCategoria, setFormCategoria] = useState("");
+  const [formValor, setFormValor] = useState("");
+  const [formDataVencimento, setFormDataVencimento] = useState("");
+  const [formStatus, setFormStatus] = useState<"Pago" | "Pendente">("Pendente");
+  
+  // Taxa state
+  const [formTaxaValor, setFormTaxaValor] = useState("");
+  const [formTaxaTipo, setFormTaxaTipo] = useState<"%" | "R$">("%");
+  const [valorLiquidoPreview, setValorLiquidoPreview] = useState(0);
+
+  // Calcular liquido em tempo real
+  useEffect(() => {
+    const bruto = parseFloat(formValor.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+    const taxa = parseFloat(formTaxaValor) || 0;
+    const liquido = calcularLiquido(bruto, taxa, formTaxaTipo);
+    setValorLiquidoPreview(Math.max(0, liquido));
+  }, [formValor, formTaxaValor, formTaxaTipo]);
+
+  // Carregar dados
+  useEffect(() => {
+    setLoading(true);
+    if (modoSimulacao) {
+      setTimeout(() => {
+        setLancamentos(mockLancamentos);
+        setLoading(false);
+      }, 300);
+    } else {
+      setLancamentos(realData);
+      setLoading(false);
+    }
+  }, [modoSimulacao, realData]);
+
+  // Métricas calculadas
+  const metricas = useMemo(() => {
+    const entradas = lancamentos.filter(l => l.tipo === "Entrada");
+    const saidas = lancamentos.filter(l => l.tipo === "Saída");
+    
+    const faturamentoBruto = entradas.reduce((sum, l) => sum + l.valorBruto, 0);
+    const lucroLiquido = entradas.reduce((sum, l) => sum + l.valorLiquido, 0) - saidas.reduce((sum, l) => sum + l.valorLiquido, 0);
+    const aPagar = saidas.filter(l => l.status === "Pendente").reduce((sum, l) => sum + l.valorLiquido, 0);
+    const aReceber = entradas.filter(l => l.status === "A Receber").reduce((sum, l) => sum + l.valorLiquido, 0);
+    
+    const vendasFisicas = entradas.filter(l => l.canal === "Balcão" || l.canal === "WhatsApp").reduce((sum, l) => sum + l.valorLiquido, 0);
+    const vendasDelivery = entradas.filter(l => l.canal === "iFood" || l.canal === "UberEats").reduce((sum, l) => sum + l.valorLiquido, 0);
+    
+    return { faturamentoBruto, lucroLiquido, aPagar, aReceber, vendasFisicas, vendasDelivery };
+  }, [lancamentos]);
+
+  // Total de comissões/taxas
+  const totalComissoes = useMemo(() => {
+    return lancamentos
+      .filter(l => l.taxaValor && l.taxaValor > 0)
+      .reduce((sum, l) => {
+        if (l.taxaTipo === "%") {
+          return sum + (l.valorBruto * (l.taxaValor! / 100));
+        }
+        return sum + (l.taxaValor || 0);
+      }, 0);
+  }, [lancamentos]);
+
+  // Filtrar lançamentos
+  const lancamentosFiltrados = useMemo(() => {
+    return lancamentos.filter(l => {
+      const matchData = !filtroData || l.data.includes(filtroData);
+      const matchCategoria = !filtroCategoria || l.categoria === filtroCategoria;
+      const matchStatus = !filtroStatus || l.status === filtroStatus;
+      return matchData && matchCategoria && matchStatus;
+    });
+  }, [lancamentos, filtroData, filtroCategoria, filtroStatus]);
+
+  // Salvar novo lançamento
+  const handleSave = () => {
+    if (!formDescricao || !formCategoria || !formValor || !formDataVencimento) {
+      alert("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    const bruto = parseFloat(formValor.replace(/[^\d,]/g, "").replace(",", "."));
+    if (isNaN(bruto) || bruto <= 0) {
+      alert("Valor inválido");
+      return;
+    }
+
+    const taxa = parseFloat(formTaxaValor) || 0;
+    const liquido = calcularLiquido(bruto, taxa, formTaxaTipo);
+
+    const novoLancamento: Lancamento = {
+      id: Date.now().toString(),
+      data: formDataVencimento,
+      descricao: formDescricao,
+      categoria: formCategoria as any,
+      canal: "Outros",
+      metodoPagamento: "Pix",
+      valorBruto: bruto,
+      valorLiquido: Math.max(0, liquido),
+      status: formStatus,
+      tipo: formTipo,
+      taxaValor: taxa > 0 ? taxa : undefined,
+      taxaTipo: taxa > 0 ? formTaxaTipo : undefined,
+    };
+
+    setSaving(true);
+    setTimeout(() => {
+      setRealData(prev => [novoLancamento, ...prev]);
+      setShowForm(false);
+      resetForm();
+      setSaving(false);
+    }, 500);
+  };
+
+  const resetForm = () => {
+    setFormTipo("Saída");
+    setFormDescricao("");
+    setFormCategoria("");
+    setFormValor("");
+    setFormDataVencimento("");
+    setFormStatus("Pendente");
+    setFormTaxaValor("");
+    setFormTaxaTipo("%");
+    setValorLiquidoPreview(0);
+  };
+
+  // Exportações
+  const exportToPDF = () => {
+    const html = `
+      <html>
+        <head><title>Relatório Financeiro</title></head>
+        <body>
+          <h1>Relatório Financeiro - ${new Date().toLocaleDateString('pt-BR')}</h1>
+          <p><strong>Total em Comissões/Taxas:</strong> ${formatCurrency(totalComissoes)}</p>
+          <table border="1">
+            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Bruto</th><th>Taxa</th><th>Líquido</th><th>Status</th></tr>
+            ${lancamentosFiltrados.map(l => `
+              <tr>
+                <td>${l.data}</td>
+                <td>${l.descricao}</td>
+                <td>${l.categoria}</td>
+                <td>${formatCurrency(l.valorBruto)}</td>
+                <td>${l.taxaValor ? `${l.taxaValor}${l.taxaTipo}` : '-'}</td>
+                <td>${formatCurrency(l.valorLiquido)}</td>
+                <td>${l.status}</td>
               </tr>
-            </thead>
-            <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-cream/90">{e.description}</p>
-                    <p className="text-xs text-cream/40">{e.type === "income" ? "Receita" : "Despesa"}</p>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-cream/50">{e.category}</td>
-                  <td className="px-4 py-3">
-                    {e.order_id ? (
-                      <a
-                        href="/admin/pedidos"
-                        className="font-mono text-xs text-blue-400 hover:text-blue-300"
-                        title={`Ver pedido ${e.order_id}`}
-                      >
-                        {e.order_id}
-                      </a>
-                    ) : (
-                      <span className="text-xs text-cream/25">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-cream/50">
-                    {new Date(e.due_date + "T12:00:00").toLocaleDateString("pt-BR")}
-                  </td>
-                  <td className={`px-4 py-3 font-semibold ${e.type === "income" ? "text-green-400" : "text-red-400"}`}>
-                    {e.type === "expense" ? "- " : "+ "}{formatCurrency(Number(e.amount))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[e.status]}`}>
-                      {STATUS_LABELS[e.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {e.status !== "paid" && (
-                        <button
-                          onClick={() => markPaid(e)}
-                          className="rounded px-2 py-1 text-xs text-green-400/60 hover:bg-green-500/10 hover:text-green-400"
-                        >
-                          Pagar
-                        </button>
-                      )}
-                      <button
-                        onClick={() => openEdit(e)}
-                        className="rounded px-2 py-1 text-xs text-cream/40 hover:bg-white/5 hover:text-amberglow"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => handleDelete(e.id)}
-                        className="rounded px-2 py-1 text-xs text-cream/30 hover:bg-red-500/10 hover:text-red-400"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            `).join('')}
           </table>
-        </div>
-      )}
+        </body>
+      </html>
+    `;
+    const win = window.open('', '_blank');
+    win?.document.write(html);
+    win?.print();
+  };
 
+  const exportToExcel = () => {
+    const csv = [
+      ["Data", "Descrição", "Categoria", "Valor Bruto", "Taxa", "Valor Líquido", "Status", "Tipo"],
+      ...lancamentosFiltrados.map(l => [
+        l.data, l.descricao, l.categoria, l.valorBruto.toString(), 
+        l.taxaValor ? `${l.taxaValor}${l.taxaTipo}` : '',
+        l.valorLiquido.toString(), l.status, l.tipo
+      ])
+    ].map(row => row.join(";")).join("\n");
+    
+    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `financeiro_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  if (loading) return <div className="p-6 text-cream">Carregando...</div>;
+
+  return (
+    <div className="p-6 w-full">
+      {/* Header */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-cream">Financeiro</h1>
+          <p className="text-sm text-cream/50">Gestão financeira e fluxo de caixa</p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowForm(true)} 
+            className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow hover:bg-amberglow/35"
+          >
+            + Novo Lançamento
+          </button>
+          <button onClick={exportToPDF} className="rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-400 hover:bg-red-500/30">Exportar PDF</button>
+          <button onClick={exportToExcel} className="rounded-lg bg-emerald-500/20 px-4 py-2 text-sm text-emerald-400 hover:bg-emerald-500/30">Exportar Excel</button>
+        </div>
+      </div>
+
+      {/* Cards de Métricas */}
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard title="Faturamento Bruto" value={formatCurrency(metricas.faturamentoBruto)} icon="💰" color="blue" />
+        <MetricCard title="Lucro Líquido" value={formatCurrency(metricas.lucroLiquido)} icon="📈" color="green" />
+        <MetricCard title="A Pagar (Hoje)" value={formatCurrency(metricas.aPagar)} icon="💳" color="red" />
+        <MetricCard title="Comissões/Taxas" value={formatCurrency(totalComissoes)} icon="📊" color="amber" />
+      </div>
+
+      {/* Gráfico */}
+      <div className="mb-6">
+        <SimpleChart data={[
+          { label: "Físico", value: metricas.vendasFisicas, color: "#10b981" },
+          { label: "Delivery", value: metricas.vendasDelivery, color: "#f59e0b" },
+        ]} />
+      </div>
+
+      {/* Filtros */}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input 
+          type="date" 
+          value={filtroData} 
+          onChange={(e) => setFiltroData(e.target.value)} 
+          className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"
+        />
+        <select 
+          value={filtroCategoria} 
+          onChange={(e) => setFiltroCategoria(e.target.value)} 
+          className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"
+        >
+          <option value="" className="bg-zinc-900 text-white">Todas Categorias</option>
+          <option value="Venda" className="bg-zinc-900 text-white">Venda</option>
+          <option value="Insumos" className="bg-zinc-900 text-white">Insumos</option>
+          <option value="Embalagens" className="bg-zinc-900 text-white">Embalagens</option>
+          <option value="Custos Fixos" className="bg-zinc-900 text-white">Custos Fixos</option>
+          <option value="Custos Variáveis" className="bg-zinc-900 text-white">Custos Variáveis</option>
+          <option value="Taxas Apps" className="bg-zinc-900 text-white">Taxas Apps</option>
+          <option value="Folha de Pagamento" className="bg-zinc-900 text-white">Folha de Pagamento</option>
+        </select>
+        <select 
+          value={filtroStatus} 
+          onChange={(e) => setFiltroStatus(e.target.value)} 
+          className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"
+        >
+          <option value="" className="bg-zinc-900 text-white">Todos Status</option>
+          <option value="Pago" className="bg-zinc-900 text-white">Pago</option>
+          <option value="Pendente" className="bg-zinc-900 text-white">Pendente</option>
+          <option value="A Receber" className="bg-zinc-900 text-white">A Receber</option>
+        </select>
+      </div>
+
+      {/* Tabela de Lançamentos */}
+      <div className="mb-6 overflow-x-auto rounded-2xl border border-white/10">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-white/5 text-xs uppercase text-cream/50">
+            <tr>
+              <th className="px-4 py-3">Data</th>
+              <th className="px-4 py-3">Descrição</th>
+              <th className="px-4 py-3">Categoria</th>
+              <th className="px-4 py-3">Bruto</th>
+              <th className="px-4 py-3">Taxa</th>
+              <th className="px-4 py-3">Líquido</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {lancamentosFiltrados.map((l) => (
+              <tr key={l.id} className="hover:bg-white/[0.02]">
+                <td className="px-4 py-3 text-cream/70">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
+                <td className="px-4 py-3 font-medium text-cream">{l.descricao}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${
+                    l.categoria === 'Venda' ? 'bg-emerald-500/20 text-emerald-400' :
+                    l.categoria === 'Embalagens' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-amber-500/20 text-amber-400'
+                  }`}>{l.categoria}</span>
+                </td>
+                <td className="px-4 py-3 text-cream/60">{formatCurrency(l.valorBruto)}</td>
+                <td className="px-4 py-3 text-cream/60">{l.taxaValor ? `${l.taxaValor}${l.taxaTipo}` : '-'}</td>
+                <td className={`px-4 py-3 font-semibold ${l.tipo === 'Entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {l.tipo === 'Entrada' ? '+' : '-'}{formatCurrency(l.valorLiquido)}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${
+                    l.status === 'Pago' ? 'bg-emerald-500/20 text-emerald-400' :
+                    l.status === 'A Receber' ? 'bg-amber-500/20 text-amber-400' :
+                    'bg-red-500/20 text-red-400'
+                  }`}>{l.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* DRE Simplificado */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <h3 className="mb-4 text-lg font-semibold text-cream">DRE Simplificado</h3>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between border-b border-white/5 pb-2">
+            <span className="text-cream/70">Receita Bruta</span>
+            <span className="font-medium text-cream">{formatCurrency(metricas.faturamentoBruto)}</span>
+          </div>
+          <div className="flex justify-between border-b border-white/5 pb-2">
+            <span className="text-cream/70">(-) Comissões/Taxas</span>
+            <span className="font-medium text-red-400">{formatCurrency(totalComissoes)}</span>
+          </div>
+          <div className="flex justify-between border-b border-white/5 pb-2">
+            <span className="text-cream/70">(-) Custos Operacionais</span>
+            <span className="font-medium text-red-400">{formatCurrency(lancamentos.filter(l => l.tipo === 'Saída').reduce((s, l) => s + l.valorLiquido, 0))}</span>
+          </div>
+          <div className="flex justify-between pt-2">
+            <span className="font-semibold text-cream">Lucro Líquido</span>
+            <span className="font-bold text-emerald-400">{formatCurrency(metricas.lucroLiquido)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Novo Lançamento */}
       {showForm && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-coal p-6 shadow-2xl">
-            <h2 className="mb-5 font-title text-xl text-cream">
-              {editingId ? "Editar Lançamento" : "Novo Lançamento"}
-            </h2>
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+            <h2 className="mb-5 font-title text-xl text-cream">Novo Lançamento</h2>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">TIPO *</label>
-                  <select
-                    value={form.type}
-                    onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as "income" | "expense", category: "" }))}
-                    className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
+              {/* Tipo */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">TIPO *</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFormTipo("Entrada")}
+                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                      formTipo === "Entrada" 
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                        : "bg-white/5 text-cream/50 border border-white/10"
+                    }`}
                   >
-                    <option value="income">Receita</option>
-                    <option value="expense">Despesa</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">CATEGORIA *</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                    className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
+                    Receita
+                  </button>
+                  <button
+                    onClick={() => setFormTipo("Saída")}
+                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                      formTipo === "Saída" 
+                        ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                        : "bg-white/5 text-cream/50 border border-white/10"
+                    }`}
                   >
-                    <option value="">Selecione</option>
-                    {(form.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    Despesa
+                  </button>
                 </div>
               </div>
 
+              {/* Descrição */}
               <div>
                 <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">DESCRIÇÃO *</label>
                 <input
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Descrição do lançamento"
+                  type="text"
+                  value={formDescricao}
+                  onChange={(e) => setFormDescricao(e.target.value)}
+                  placeholder="Ex: Conta de Luz, Fornecedor de Queijo"
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">VALOR (R$) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">VENCIMENTO *</label>
-                  <input
-                    type="date"
-                    value={form.due_date}
-                    onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
-                  />
-                </div>
-              </div>
-
+              {/* Categoria */}
               <div>
-                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">STATUS</label>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">CATEGORIA *</label>
                 <select
-                  value={form.status}
-                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as FormState["status"] }))}
-                  className="w-full rounded-lg border border-white/10 bg-coal px-3 py-2 text-sm text-cream outline-none focus:border-amberglow/50"
+                  value={formCategoria}
+                  onChange={(e) => setFormCategoria(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
                 >
-                  <option value="pending">Pendente</option>
-                  <option value="paid">Pago</option>
-                  <option value="overdue">Vencido</option>
+                  <option value="" className="bg-zinc-900 text-white">Selecione...</option>
+                  <option value="Insumos" className="bg-zinc-900 text-white">Insumos</option>
+                  <option value="Embalagens" className="bg-zinc-900 text-white">Embalagens</option>
+                  <option value="Custos Fixos" className="bg-zinc-900 text-white">Custos Fixos</option>
+                  <option value="Custos Variáveis" className="bg-zinc-900 text-white">Custos Variáveis</option>
+                  <option value="Taxas Apps" className="bg-zinc-900 text-white">Taxas Apps</option>
+                  <option value="Folha de Pagamento" className="bg-zinc-900 text-white">Folha de Pagamento</option>
+                  <option value="Venda" className="bg-zinc-900 text-white">Venda</option>
                 </select>
               </div>
 
-              {error && (
-                <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-                  {error}
-                </p>
+              {/* Valor Bruto */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">VALOR BRUTO (R$) *</label>
+                <input
+                  type="text"
+                  value={formValor}
+                  onChange={(e) => setFormValor(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                />
+              </div>
+
+              {/* Taxa/Comissão */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">TAXA/COMISSÃO</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={formTaxaValor}
+                    onChange={(e) => setFormTaxaValor(e.target.value)}
+                    placeholder="0"
+                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                  />
+                  <select
+                    value={formTaxaTipo}
+                    onChange={(e) => setFormTaxaTipo(e.target.value as "%" | "R$")}
+                    className="w-20 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
+                  >
+                    <option value="%" className="bg-zinc-900 text-white">%</option>
+                    <option value="R$" className="bg-zinc-900 text-white">R$</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Preview Valor Líquido */}
+              {formValor && (
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+                  <p className="text-xs text-cream/50">Valor Líquido Estimado:</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(valorLiquidoPreview)}</p>
+                </div>
               )}
+
+              {/* Data de Vencimento */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">DATA DE VENCIMENTO *</label>
+                <input
+                  type="date"
+                  value={formDataVencimento}
+                  onChange={(e) => setFormDataVencimento(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">STATUS *</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as "Pago" | "Pendente")}
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
+                >
+                  <option value="Pago" className="bg-zinc-900 text-white">Pago</option>
+                  <option value="Pendente" className="bg-zinc-900 text-white">Pendente</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setShowForm(false)} className="rounded-lg px-4 py-2 text-sm text-cream/50 hover:bg-white/5">
+              <button
+                onClick={() => { setShowForm(false); resetForm(); }}
+                className="rounded-lg px-4 py-2 text-sm text-cream/50 transition hover:bg-white/5"
+              >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow hover:bg-amberglow/35 disabled:opacity-50"
+                className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
               >
                 {saving ? "Salvando..." : "Salvar"}
               </button>
