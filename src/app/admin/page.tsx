@@ -205,11 +205,30 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
+  // Sincronização entre abas
   useEffect(() => {
     loadOrders();
     loadMotoboys();
-    const interval = setInterval(loadOrders, 30000);
-    return () => clearInterval(interval);
+    
+    // Polling a cada 10 segundos
+    const interval = setInterval(loadOrders, 10000);
+    
+    // BroadcastChannel para sincronização entre abas
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel("onix-orders-sync");
+      bc.onmessage = (event) => {
+        if (event.data.type === "ORDER_UPDATED") {
+          console.log("[Dashboard] Recebido update de outra aba, recarregando...");
+          loadOrders();
+        }
+      };
+    }
+    
+    return () => {
+      clearInterval(interval);
+      bc?.close();
+    };
   }, [loadOrders, loadMotoboys]);
 
   // Mover pedido para próxima coluna
@@ -225,6 +244,13 @@ export default function AdminDashboardPage() {
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
         );
+        
+        // Notificar outras abas
+        if (typeof BroadcastChannel !== "undefined") {
+          const bc = new BroadcastChannel("onix-orders-sync");
+          bc.postMessage({ type: "ORDER_UPDATED" });
+          bc.close();
+        }
       }
     } catch (err) {
       console.error("Erro ao mover pedido:", err);

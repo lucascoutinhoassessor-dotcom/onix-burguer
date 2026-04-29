@@ -202,8 +202,22 @@ export default function AdminPedidosPage() {
     fetchOrders();
     if (pendingTimerRef.current) clearInterval(pendingTimerRef.current);
     pendingTimerRef.current = setInterval(fetchOrders, 15000);
+    
+    // BroadcastChannel para sincronização entre abas
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel("onix-orders-sync");
+      bc.onmessage = (event) => {
+        if (event.data.type === "ORDER_UPDATED") {
+          console.log("[Pedidos] Recebido update de outra aba, recarregando...");
+          fetchOrders();
+        }
+      };
+    }
+    
     return () => {
       if (pendingTimerRef.current) clearInterval(pendingTimerRef.current);
+      bc?.close();
     };
   }, [fetchOrders]);
 
@@ -229,6 +243,13 @@ export default function AdminPedidosPage() {
         body: JSON.stringify({ order_id: orderId, status })
       });
       await fetchOrders();
+      
+      // Notificar outras abas
+      if (typeof BroadcastChannel !== "undefined") {
+        const bc = new BroadcastChannel("onix-orders-sync");
+        bc.postMessage({ type: "ORDER_UPDATED" });
+        bc.close();
+      }
     } catch (err) {
       console.error("Status update error:", err);
     }
