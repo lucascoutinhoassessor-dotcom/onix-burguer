@@ -60,31 +60,60 @@ function OrderCard({
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4 hover:bg-white/[0.08] transition-colors">
-      {/* Nº do Pedido e Valor */}
+      {/* Header: Nº do Pedido, Data/Hora e Valor */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="font-mono text-sm font-semibold text-cream">{order.order_id}</span>
+        <div>
+          <span className="font-mono text-sm font-semibold text-cream">{order.order_id}</span>
+          <p className="text-xs text-cream/40">
+            {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
         <span className="text-sm font-bold text-amberglow">{formatCurrency(Number(order.total))}</span>
       </div>
 
-      {/* Itens */}
-      <p className="text-xs text-cream/60 mb-2 line-clamp-2" title={itemsText}>
-        {itemsText || "Sem itens"}
-      </p>
-
-      {/* Endereço/Bairro */}
-      <div className="flex items-center gap-1.5 mb-2 text-xs text-cream/50">
+      {/* Cliente */}
+      <div className="flex items-center gap-1.5 mb-2 text-xs text-cream/70">
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
         </svg>
-        <span className="truncate">{order.customer_address || order.customer_neighborhood || "Endereço não informado"}</span>
+        <span className="truncate font-medium">{order.customer_name}</span>
       </div>
 
-      {/* Forma de Pagamento */}
-      <div className="flex items-center gap-1.5 mb-3 text-xs text-cream/50">
+      {/* Telefone */}
+      <div className="flex items-center gap-1.5 mb-2 text-xs text-cream/50">
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current">
-          <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
+          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
         </svg>
-        <span className="capitalize">{order.payment_method || "Não informado"}</span>
+        <span>{order.customer_phone || "Não informado"}</span>
+      </div>
+
+      {/* Itens - Lista completa */}
+      <div className="mb-3">
+        <p className="text-xs text-cream/40 mb-1">Itens:</p>
+        <p className="text-xs text-cream/70 line-clamp-3" title={itemsText}>
+          {itemsText || "Sem itens"}
+        </p>
+      </div>
+
+      {/* Endereço/Bairro */}
+      <div className="flex items-start gap-1.5 mb-2 text-xs text-cream/50">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current flex-shrink-0 mt-0.5">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+        </svg>
+        <span className="line-clamp-2">{order.customer_address || order.customer_neighborhood || "Endereço não informado"}</span>
+      </div>
+
+      {/* Forma de Pagamento e Modo de Entrega */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-cream/50">
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current">
+            <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
+          </svg>
+          <span className="capitalize">{order.payment_method || "Não informado"}</span>
+        </div>
+        <span className="text-xs text-cream/40 capitalize">
+          {order.fulfillment_mode === "delivery" ? "🛵 Delivery" : "🏠 Retirada"}
+        </span>
       </div>
 
       {/* Botão de Ação */}
