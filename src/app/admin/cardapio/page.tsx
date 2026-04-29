@@ -368,9 +368,18 @@ export default function AdminCardapioPage() {
     const matchesSearch = searchTerm === "" || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Filtro por categoria
-    const matchesCategory = selectedCategory === "all" || 
-      item.category === selectedCategory;
+    // Filtro por categoria - converter slug para UUID para comparar
+    let matchesCategory = selectedCategory === "all";
+    if (selectedCategory !== "all") {
+      // Buscar categoria pelo ID
+      const selectedCat = categories.find(c => c.id === selectedCategory);
+      if (selectedCat) {
+        // Comparar se o slug do item corresponde ao slug da categoria selecionada
+        // ou se o category do item é o ID da categoria
+        matchesCategory = item.category === selectedCategory || 
+                         item.category === selectedCat.slug;
+      }
+    }
     
     // Filtro por status
     const matchesStatus = statusFilter === "all" || 
