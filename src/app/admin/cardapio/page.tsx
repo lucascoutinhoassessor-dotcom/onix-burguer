@@ -8,6 +8,7 @@ import { menuItems as localMenuItems } from "@/data/menu";
 type Category = {
   id: string;
   name: string;
+  slug: string;
   sort_order: number;
 };
 
