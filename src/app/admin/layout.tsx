@@ -7,6 +7,7 @@ import type { DbOrder } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/checkout";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { playDoorbell } from "@/lib/audio";
+import { SimulacaoProvider, useSimulacao } from "@/contexts/simulacao-context";
 
 const NAV_ITEMS = [
   {
@@ -263,10 +264,19 @@ function SidebarNav({ collapsed, onItemClick }: { collapsed: boolean; onItemClic
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SimulacaoProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </SimulacaoProvider>
+  );
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { modoSimulacao, toggleModoSimulacao } = useSimulacao();
 
   // Detect login page
   const isLoginPage = pathname === "/admin/login";
@@ -390,15 +400,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                 )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-cream/40 transition hover:bg-white/5 hover:text-cream/70"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-                </svg>
-                Sair
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleModoSimulacao}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                    modoSimulacao
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "bg-white/5 text-cream/50 hover:bg-white/10"
+                  }`}
+                  title="Ative para testar funcionalidades com dados simulados"
+                >
+                  <span className={`h-2 w-2 rounded-full ${modoSimulacao ? "bg-amber-400 animate-pulse" : "bg-cream/30"}`}></span>
+                  {modoSimulacao ? "Modo Teste ON" : "Modo Teste OFF"}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-cream/40 transition hover:bg-white/5 hover:text-cream/70"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                  </svg>
+                  Sair
+                </button>
+              </div>
             </header>
 
             {/* Page content */}
