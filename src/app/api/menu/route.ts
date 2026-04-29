@@ -61,11 +61,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Campos obrigatórios: id, name, price, category." }, { status: 400 });
     }
 
-    console.log("POST /api/menu - Inserting item with id:", id);
+    // Buscar UUID da categoria a partir do slug
+    const { data: catData, error: catError } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("slug", category)
+      .single();
+    
+    if (catError || !catData) {
+      console.error("POST /api/menu - Categoria não encontrada:", category);
+      return NextResponse.json({ success: false, error: "Categoria não encontrada." }, { status: 400 });
+    }
+
+    console.log("POST /api/menu - Inserting item with id:", id, "category UUID:", catData.id);
 
     const { data, error } = await supabaseAdmin
       .from("menu_items")
-      .insert({ id, name, description, price, category, image, active: active ?? true, option_groups: option_groups ?? [], sort_order: sort_order ?? 0 })
+      .insert({ 
+        id, 
+        name, 
+        description, 
+        price, 
+        category: catData.id, 
+        image, 
+        active: active ?? true, 
+        option_groups: option_groups ?? [], 
+        sort_order: sort_order ?? 0 
+      })
       .select()
       .single();
 
@@ -89,15 +111,28 @@ export async function PATCH(request: NextRequest) {
     const { id, ...updates } = body;
 
     console.log("[API PATCH] Request received:", JSON.stringify(body, null, 2));
-    console.log("[API PATCH] Extracted id:", id);
-    console.log("[API PATCH] Updates to apply:", JSON.stringify(updates, null, 2));
 
     if (!id) {
       console.error("[API PATCH] ERROR: id is missing");
       return NextResponse.json({ success: false, error: "id é obrigatório." }, { status: 400 });
     }
 
-    console.log("[API PATCH] Calling Supabase update for id:", id);
+    // Se estiver atualizando a categoria, converter slug para UUID
+    if (updates.category) {
+      const { data: catData, error: catError } = await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("slug", updates.category)
+        .single();
+      
+      if (catError || !catData) {
+        console.error("[API PATCH] Categoria não encontrada:", updates.category);
+        return NextResponse.json({ success: false, error: "Categoria não encontrada." }, { status: 400 });
+      }
+      
+      updates.category = catData.id;
+      console.log("[API PATCH] Converted category slug to UUID:", catData.id);
+    }
 
     const { data, error } = await supabaseAdmin
       .from("menu_items")
