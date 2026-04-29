@@ -138,20 +138,31 @@ export function MenuPageClient() {
       grouped[cat.slug] = [];
     });
     
+    console.log("[Cardapio] Categorias carregadas:", categories.map(c => ({ slug: c.slug, name: c.name })));
+    console.log("[Cardapio] Menu items:", menuItems.map(i => ({ name: i.name, category: i.category, active: i.active })));
+    
     menuItems
       .filter(item => item.active === true)
       .forEach(item => {
         const itemCategory = item.category?.toLowerCase().trim();
-        const matchedCategory = categories.find(cat => 
-          cat.slug === itemCategory ||
-          cat.name.toLowerCase() === itemCategory
-        );
+        console.log("[Cardapio] Processando item:", item.name, "- categoria:", itemCategory);
+        
+        const matchedCategory = categories.find(cat => {
+          const match = cat.slug === itemCategory || cat.name.toLowerCase() === itemCategory;
+          if (match) {
+            console.log("[Cardapio] Match encontrado:", item.name, "->", cat.slug);
+          }
+          return match;
+        });
         
         if (matchedCategory) {
           grouped[matchedCategory.slug].push(item);
+        } else {
+          console.warn("[Cardapio] Item sem categoria correspondente:", item.name, "categoria:", item.category);
         }
       });
     
+    console.log("[Cardapio] Itens agrupados:", Object.keys(grouped).map(k => `${k}: ${grouped[k].length}`));
     return grouped;
   }, [menuItems, categories]);
 
