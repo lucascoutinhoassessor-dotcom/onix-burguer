@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatCurrency } from "@/lib/checkout";
-import { useSimulacao } from "@/contexts/simulacao-context";
 
 // Tipo estendido com taxa
 type Lancamento = {
@@ -101,7 +100,7 @@ function SimpleChart({ data }: { data: { label: string; value: number; color: st
 
 // Componente Principal
 export default function FinanceiroPage() {
-  const { modoSimulacao } = useSimulacao();
+  const [modoSimulacao, setModoSimulacao] = useState(false);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [realData, setRealData] = useState<Lancamento[]>([]);
   const [loading, setLoading] = useState(true);
