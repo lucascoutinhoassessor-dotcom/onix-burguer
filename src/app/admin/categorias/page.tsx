@@ -5,16 +5,15 @@ import { useEffect, useState } from "react";
 type Category = {
   id: string;
   name: string;
+  slug: string;
   sort_order: number;
 };
 
 type FormState = {
-  id: string;
   name: string;
 };
 
 const EMPTY_FORM: FormState = {
-  id: "",
   name: ""
 };
 
@@ -50,26 +49,37 @@ export default function AdminCategoriasPage() {
 
   function openEdit(category: Category) {
     setForm({
-      id: category.id,
       name: category.name
     });
     setEditingId(category.id);
     setShowForm(true);
   }
 
+  // Função para gerar slug a partir do nome
+  function generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 50);
+  }
+
   async function handleSave() {
-    if (!form.id || !form.name) {
-      alert("Preencha todos os campos obrigatórios");
+    if (!form.name) {
+      alert("Preencha o nome da categoria");
       return;
     }
 
+    const slug = generateSlug(form.name);
+    
     setSaving(true);
     try {
-      const method = editingId ? "PUT" : "POST";
-      const body = {
-        id: editingId ? editingId : form.id.toLowerCase().replace(/\s+/g, "-"),
-        name: form.name
-      };
+      const method = editingId ? "PATCH" : "POST";
+      const body = editingId 
+        ? { id: editingId, name: form.name }
+        : { name: form.name, slug };
 
       const res = await fetch("/api/categories", {
         method,
@@ -191,18 +201,6 @@ export default function AdminCategoriasPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">ID *</label>
-                <input
-                  value={form.id}
-                  onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
-                  disabled={!!editingId}
-                  placeholder="nome-da-categoria"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none disabled:opacity-50 focus:border-amberglow/50"
-                />
-                <p className="mt-1 text-xs text-cream/30">Usado na URL. Ex: hamburgueres</p>
-              </div>
-
-              <div>
                 <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">NOME *</label>
                 <input
                   value={form.name}
@@ -223,7 +221,7 @@ export default function AdminCategoriasPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !form.id || !form.name}
+                disabled={saving || !form.name}
                 className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
               >
                 {saving ? "Salvando..." : "Salvar"}
