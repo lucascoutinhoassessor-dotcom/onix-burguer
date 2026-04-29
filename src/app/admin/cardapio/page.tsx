@@ -189,7 +189,7 @@ export default function AdminCardapioPage() {
   function openCreate() {
     setForm({
       ...EMPTY_FORM,
-      category: categories[0]?.id ?? ""
+      category: categories[0]?.slug ?? ""
     });
     setEditingId(null);
     setShowForm(true);
@@ -564,7 +564,7 @@ export default function AdminCardapioPage() {
                   >
                     {categories.length === 0 && <option value="">Carregando...</option>}
                     {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
+                      <option key={c.id} value={c.slug}>
                         {c.name}
                       </option>
                     ))}
