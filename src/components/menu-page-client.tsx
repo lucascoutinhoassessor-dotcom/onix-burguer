@@ -4,20 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultSelections, useCart } from "@/components/cart-context";
-import { type MenuCategory, type MenuItem, type MenuOptionGroup } from "@/data/menu";
+import { type MenuItem, type MenuOptionGroup } from "@/data/menu";
 
-const categoryLabels: Record<MenuCategory, string> = {
-  hamburgueres: "Hambúrgueres",
-  acompanhamentos: "Acompanhamentos",
-  bebidas: "Bebidas",
-  sobremesas: "Sobremesas"
-};
-
-const categoryDescriptions: Record<MenuCategory, string> = {
-  hamburgueres: "Blends autorais, smashs e receitas premium com finalização impecável.",
-  acompanhamentos: "Entradas e extras para completar a experiência da mesa.",
-  bebidas: "Clássicos gelados, sucos e milkshakes para harmonizar com o pedido.",
-  sobremesas: "Fechamentos indulgentes com assinatura da casa."
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  sort_order: number;
 };
 
 type SelectedGroupOptions = Record<string, string[]>;
@@ -78,40 +71,52 @@ function isSelectionValid(optionGroups: MenuOptionGroup[] | undefined, selection
 }
 
 export function MenuPageClient() {
-  const [activeCategory, setActiveCategory] = useState<MenuCategory>("hamburgueres");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selection, setSelection] = useState<SelectedGroupOptions>({});
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem, openCart } = useCart();
 
-  // Buscar dados da API
+  // Buscar categorias dinâmicas da API
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const res = await fetch(`/api/categories?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        const data = await res.json();
+        console.log("[Cardapio] Categorias:", data);
+        if (data.success && data.categories && data.categories.length > 0) {
+          setCategories(data.categories);
+          setActiveCategory(data.categories[0].slug);
+        }
+      } catch (err) {
+        console.error("[Cardapio] Erro ao carregar categorias:", err);
+      }
+    }
+    loadCategories();
+  }, []);
+
+  // Buscar dados da API com polling
   useEffect(() => {
     async function loadMenuItems() {
       try {
-        // Adicionar timestamp para evitar cache
         const res = await fetch(`/api/menu?t=${Date.now()}`, {
           cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          headers: { 'Cache-Control': 'no-cache' }
         });
         const data = await res.json();
-        console.log("[Cardapio] API response:", data);
         if (data.success && data.items) {
-          // Mapear option_groups (Supabase) para optionGroups (frontend)
           const mappedItems = data.items.map((item: any) => ({
             ...item,
             optionGroups: item.option_groups || [],
-            // Garantir que a imagem nunca seja null
             image: item.image || "https://via.placeholder.com/640x480?text=Sem+Imagem",
-            // Garantir que active seja booleano
             active: item.active === true
           }));
-          console.log("[Cardapio] Mapped items:", mappedItems.length, "items");
           setMenuItems(mappedItems);
-        } else {
-          console.error("[Cardapio] API returned no items:", data);
         }
       } catch (err) {
         console.error("[Cardapio] Erro ao carregar cardapio:", err);
@@ -119,38 +124,39 @@ export function MenuPageClient() {
         setLoading(false);
       }
     }
-    loadMenuItems();
     
-    // Atualizar a cada 30 segundos para sincronizar com o admin
+    loadMenuItems();
     const interval = setInterval(loadMenuItems, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const itemsByCategory = useMemo(
-    () =>
-      menuItems
-        .filter(item => item.active === true) // Só mostrar produtos ativos
-        .reduce<Record<MenuCategory, MenuItem[]>>(
-          (accumulator, item) => {
-            // Verificar se a categoria é válida
-            if (item.category && accumulator[item.category]) {
-              accumulator[item.category].push(item);
-            } else {
-              console.warn("Item com categoria inválida:", item);
-            }
-            return accumulator;
-          },
-          {
-            hamburgueres: [],
-            acompanhamentos: [],
-            bebidas: [],
-            sobremesas: []
-          }
-        ),
-    [menuItems]
-  );
+  // Agrupar itens por categoria usando slug
+  const itemsByCategory = useMemo(() => {
+    const grouped: Record<string, MenuItem[]> = {};
+    
+    categories.forEach(cat => {
+      grouped[cat.slug] = [];
+    });
+    
+    menuItems
+      .filter(item => item.active === true)
+      .forEach(item => {
+        const itemCategory = item.category?.toLowerCase().trim();
+        const matchedCategory = categories.find(cat => 
+          cat.slug === itemCategory ||
+          cat.name.toLowerCase() === itemCategory
+        );
+        
+        if (matchedCategory) {
+          grouped[matchedCategory.slug].push(item);
+        }
+      });
+    
+    return grouped;
+  }, [menuItems, categories]);
 
-  const activeItems = itemsByCategory[activeCategory];
+  const activeItems = activeCategory ? itemsByCategory[activeCategory] || [] : [];
+  const activeCategoryData = categories.find(c => c.slug === activeCategory);
 
   function handleAddClick(item: MenuItem) {
     if (item.optionGroups && item.optionGroups.length > 0) {
@@ -190,13 +196,8 @@ export function MenuPageClient() {
   }
 
   function handleConfirmCustomization() {
-    if (!selectedItem) {
-      return;
-    }
-
-    if (!isSelectionValid(selectedItem.optionGroups, selection)) {
-      return;
-    }
+    if (!selectedItem) return;
+    if (!isSelectionValid(selectedItem.optionGroups, selection)) return;
 
     addItem({
       item: selectedItem,
@@ -209,6 +210,16 @@ export function MenuPageClient() {
   const modalSelectedOptions = selectedItem ? getSelectedOptions(selectedItem, selection) : [];
   const modalTotal =
     (selectedItem?.price ?? 0) + modalSelectedOptions.reduce((total, option) => total + option.price, 0);
+
+  if (loading) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="flex h-64 items-center justify-center text-white/50">
+          Carregando cardápio...
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -227,89 +238,91 @@ export function MenuPageClient() {
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap gap-2 sm:gap-3">
-                {(Object.keys(categoryLabels) as MenuCategory[]).map((category) => (
+                {categories.map((category) => (
                   <button
-                    key={category}
+                    key={category.id}
                     type="button"
-                    onClick={() => setActiveCategory(category)}
+                    onClick={() => setActiveCategory(category.slug)}
                     className={`rounded-full border px-4 py-2.5 text-xs font-semibold transition sm:px-5 sm:py-3 sm:text-sm ${
-                      activeCategory === category
+                      activeCategory === category.slug
                         ? "border-amberglow/60 bg-amberglow text-obsidian"
                         : "border-white/10 bg-white/[0.03] text-white/70 hover:border-amberglow/35 hover:text-cream"
                     }`}
                   >
-                    {categoryLabels[category]}
+                    {category.name}
                   </button>
                 ))}
               </div>
 
-              <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/65 lg:block">
-                {categoryDescriptions[activeCategory]}
-              </div>
+              {activeCategoryData && (
+                <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/65 lg:block">
+                  {activeCategoryData.name}
+                </div>
+              )}
             </div>
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-          {loading ? (
+          {activeItems.length === 0 ? (
             <div className="flex h-64 items-center justify-center text-white/50">
-              Carregando cardápio...
+              Nenhum item disponível nesta categoria
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {activeItems.map((item) => (
-              <article
-                key={item.id}
-                className="card-premium group overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/8 to-white/[0.03] hover:bg-white/[0.08]"
-              >
-                <div className="relative overflow-hidden border-b border-white/10 bg-[#0f0f0f]">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={640}
-                    height={480}
-                    className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <span className="absolute left-4 top-4 rounded-full border border-amberglow/25 bg-black/60 px-3 py-1 text-xs uppercase tracking-[0.28em] text-amberglow">
-                    {categoryLabels[item.category]}
-                  </span>
-                </div>
-
-                <div className="space-y-5 p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <h2 className="font-title text-3xl uppercase leading-none tracking-[0.08em] text-cream">
-                        {item.name}
-                      </h2>
-                      <p className="text-sm leading-7 text-white/65">{item.description}</p>
-                    </div>
-                    <span className="rounded-full bg-amberglow px-3 py-1 text-sm font-semibold text-obsidian">
-                      {formatCurrency(item.price)}
+                <article
+                  key={item.id}
+                  className="card-premium group overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/8 to-white/[0.03] hover:bg-white/[0.08]"
+                >
+                  <div className="relative overflow-hidden border-b border-white/10 bg-[#0f0f0f]">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      width={640}
+                      height={480}
+                      className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <span className="absolute left-4 top-4 rounded-full border border-amberglow/25 bg-black/60 px-3 py-1 text-xs uppercase tracking-[0.28em] text-amberglow">
+                      {activeCategoryData?.name || item.category}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {(item.optionGroups ?? []).map((group) => (
-                      <span
-                        key={group.id}
-                        className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs uppercase tracking-[0.22em] text-white/55"
-                      >
-                        {group.name}
+                  <div className="space-y-5 p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-2">
+                        <h2 className="font-title text-3xl uppercase leading-none tracking-[0.08em] text-cream">
+                          {item.name}
+                        </h2>
+                        <p className="text-sm leading-7 text-white/65">{item.description}</p>
+                      </div>
+                      <span className="rounded-full bg-amberglow px-3 py-1 text-sm font-semibold text-obsidian">
+                        {formatCurrency(item.price)}
                       </span>
-                    ))}
-                  </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAddClick(item)}
-                    className="btn-premium flex w-full items-center justify-center rounded-full bg-amberglow px-5 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-obsidian hover:bg-[#ffcb7d]"
-                  >
-                    {(item.optionGroups?.length ?? 0) > 0 ? "Personalizar e adicionar" : "Adicionar ao carrinho"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(item.optionGroups ?? []).map((group) => (
+                        <span
+                          key={group.id}
+                          className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs uppercase tracking-[0.22em] text-white/55"
+                        >
+                          {group.name}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddClick(item)}
+                      className="btn-premium flex w-full items-center justify-center rounded-full bg-amberglow px-5 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-obsidian hover:bg-[#ffcb7d]"
+                    >
+                      {(item.optionGroups?.length ?? 0) > 0 ? "Personalizar e adicionar" : "Adicionar ao carrinho"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
 
           <div className="mt-10 flex flex-col gap-3 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -338,7 +351,8 @@ export function MenuPageClient() {
         </section>
       </main>
 
-      {selectedItem ? (
+      {/* Modal de Personalização */}
+      {selectedItem && (
         <div
           className="fixed inset-0 z-[80] flex items-end justify-center bg-black/75 sm:items-center sm:px-4 sm:py-6"
           onClick={() => { setSelectedItem(null); setSelection({}); }}
@@ -347,7 +361,6 @@ export function MenuPageClient() {
             className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0a0a0a] shadow-amber sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Product Image */}
             <div className="relative overflow-hidden rounded-t-[2rem] bg-[#0f0f0f]">
               <Image
                 src={selectedItem.image}
@@ -359,7 +372,6 @@ export function MenuPageClient() {
               <button
                 type="button"
                 onClick={() => { setSelectedItem(null); setSelection({}); }}
-                aria-label="Fechar"
                 className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white/80 backdrop-blur-sm transition hover:bg-black/80 hover:text-amberglow"
               >
                 ✕
@@ -371,7 +383,6 @@ export function MenuPageClient() {
               </div>
             </div>
 
-            {/* Header */}
             <div className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
               <p className="text-xs uppercase tracking-[0.3em] text-amberglow">Personalizar item</p>
               <h2 className="mt-2 font-title text-3xl uppercase tracking-[0.06em] text-cream sm:text-4xl sm:tracking-[0.08em]">{selectedItem.name}</h2>
@@ -381,7 +392,6 @@ export function MenuPageClient() {
             <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
               {(selectedItem.optionGroups ?? []).map((group) => {
                 const selectedIds = selection[group.id] ?? [];
-
                 return (
                   <section key={group.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -391,17 +401,16 @@ export function MenuPageClient() {
                           {group.type === "single" ? "Escolha 1 opção" : `Escolha até ${group.maxSelections ?? group.options.length}`}
                         </p>
                       </div>
-                      {group.required ? (
+                      {group.required && (
                         <span className="rounded-full border border-amberglow/25 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-amberglow">
                           Obrigatório
                         </span>
-                      ) : null}
+                      )}
                     </div>
 
                     <div className="mt-4 grid gap-3">
                       {group.options.map((option) => {
                         const isSelected = selectedIds.includes(option.id);
-
                         return (
                           <button
                             key={option.id}
@@ -423,9 +432,6 @@ export function MenuPageClient() {
                               <p className="text-sm text-amberglow">
                                 {option.price ? `+${formatCurrency(option.price)}` : "Incluso"}
                               </p>
-                              <span className="text-xs uppercase tracking-[0.22em] text-white/35">
-                                {isSelected ? "Selecionado" : "Selecionar"}
-                              </span>
                             </div>
                           </button>
                         );
@@ -456,7 +462,7 @@ export function MenuPageClient() {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </>
   );
 }
