@@ -4,13 +4,23 @@ import { supabaseAdmin } from "@/lib/supabase";
 // GET /api/menu
 export async function GET() {
   try {
-    // Buscar itens com join na tabela categories para obter o slug
+    // Buscar categorias primeiro
+    const { data: categories, error: catError } = await supabaseAdmin
+      .from("categories")
+      .select("id, slug, name");
+    
+    if (catError) throw catError;
+    
+    // Criar mapa de id -> slug
+    const categoryMap = new Map();
+    categories?.forEach(cat => {
+      categoryMap.set(cat.id, cat.slug);
+    });
+    
+    // Buscar itens
     const { data: items, error: itemsError } = await supabaseAdmin
       .from("menu_items")
-      .select(`
-        *,
-        categories!menu_items_category_fkey(slug, name)
-      `)
+      .select("*")
       .order("sort_order", { ascending: true });
 
     if (itemsError) throw itemsError;
@@ -18,8 +28,7 @@ export async function GET() {
     // Mapear para incluir o slug da categoria
     const mappedItems = items?.map(item => ({
       ...item,
-      category: item.categories?.slug || item.category,
-      category_name: item.categories?.name
+      category: categoryMap.get(item.category) || item.category
     })) || [];
 
     // Retornar com headers para evitar cache
