@@ -119,7 +119,7 @@ function KanbanColumn({
   onDespachar?: (order: DbOrder) => void;
 }) {
   return (
-    <div className="flex flex-col min-w-[280px] w-full">
+    <div className="flex flex-col h-full">
       {/* Header da Coluna */}
       <div className={`rounded-t-xl border border-white/10 ${column.color.replace('text-', 'border-').replace('/20', '/30')} ${column.color.replace('text-', 'bg-')} p-3`}>
         <div className="flex items-center justify-between">
@@ -129,7 +129,7 @@ function KanbanColumn({
       </div>
 
       {/* Cards */}
-      <div className="flex-1 rounded-b-xl border border-t-0 border-white/10 bg-white/[0.02] p-3 space-y-3 min-h-[200px] max-h-[calc(100vh-300px)] overflow-y-auto">
+      <div className="flex-1 rounded-b-xl border border-t-0 border-white/10 bg-white/[0.02] p-3 space-y-3 overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-350px)]">
         {orders.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-xs text-cream/30">
             Sem pedidos
@@ -159,6 +159,8 @@ export default function AdminDashboardPage() {
   const [motoboys, setMotoboys] = useState<Motoboy[]>([]);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  const [creatingTestOrder, setCreatingTestOrder] = useState(false);
+
   // Buscar pedidos
   const loadOrders = useCallback(async () => {
     try {
@@ -171,6 +173,26 @@ export default function AdminDashboardPage() {
       setLoading(false);
     }
   }, []);
+
+  // Criar pedido teste
+  const createTestOrder = async () => {
+    setCreatingTestOrder(true);
+    try {
+      const res = await fetch("/api/admin/test-order", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setNotification({ message: `Pedido teste ${data.order?.order_id} criado!`, type: "success" });
+        await loadOrders();
+      } else {
+        setNotification({ message: "Erro ao criar pedido teste.", type: "error" });
+      }
+    } catch {
+      setNotification({ message: "Erro ao criar pedido teste.", type: "error" });
+    } finally {
+      setCreatingTestOrder(false);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
 
   // Buscar motoboys cadastrados
   const loadMotoboys = useCallback(async () => {
@@ -290,17 +312,26 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-title text-2xl tracking-wide text-cream">Dashboard</h1>
           <p className="text-sm text-cream/40">{stats.total} pedidos no sistema</p>
         </div>
-        <button
-          onClick={loadOrders}
-          className="rounded-lg bg-amberglow/20 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/30"
-        >
-          🔄 Atualizar
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={createTestOrder}
+            disabled={creatingTestOrder}
+            className="rounded-lg border border-dashed border-amberglow/40 bg-amberglow/5 px-4 py-2 text-xs font-medium text-amberglow/80 transition hover:border-amberglow/70 hover:bg-amberglow/10 disabled:opacity-50"
+          >
+            {creatingTestOrder ? "Criando..." : "+ Pedido Teste"}
+          </button>
+          <button
+            onClick={loadOrders}
+            className="rounded-lg bg-amberglow/20 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/30"
+          >
+            🔄 Atualizar
+          </button>
+        </div>
       </div>
 
       {/* Stats rápidas */}
@@ -323,16 +354,17 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Kanban */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+      {/* Kanban - Layout responsivo */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:overflow-x-auto lg:pb-4">
         {ordersByColumn.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            orders={column.orders}
-            onMove={handleMoveOrder}
-            onDespachar={column.id === "ready" ? enviarDadosParaMotoboy : undefined}
-          />
+          <div key={column.id} className="w-full lg:min-w-[280px] lg:w-[280px] lg:flex-shrink-0">
+            <KanbanColumn
+              column={column}
+              orders={column.orders}
+              onMove={handleMoveOrder}
+              onDespachar={column.id === "ready" ? enviarDadosParaMotoboy : undefined}
+            />
+          </div>
         ))}
       </div>
     </div>
