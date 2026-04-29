@@ -4,17 +4,27 @@ import { supabaseAdmin } from "@/lib/supabase";
 // GET /api/menu
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
+    // Buscar itens com join na tabela categories para obter o slug
+    const { data: items, error: itemsError } = await supabaseAdmin
       .from("menu_items")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("category", { ascending: true });
+      .select(`
+        *,
+        categories!menu_items_category_fkey(slug, name)
+      `)
+      .order("sort_order", { ascending: true });
 
-    if (error) throw error;
+    if (itemsError) throw itemsError;
+
+    // Mapear para incluir o slug da categoria
+    const mappedItems = items?.map(item => ({
+      ...item,
+      category: item.categories?.slug || item.category,
+      category_name: item.categories?.name
+    })) || [];
 
     // Retornar com headers para evitar cache
     return NextResponse.json(
-      { success: true, items: data },
+      { success: true, items: mappedItems },
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
