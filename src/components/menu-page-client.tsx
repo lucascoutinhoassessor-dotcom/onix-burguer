@@ -120,6 +120,10 @@ export function MenuPageClient() {
       }
     }
     loadMenuItems();
+    
+    // Atualizar a cada 30 segundos para sincronizar com o admin
+    const interval = setInterval(loadMenuItems, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const itemsByCategory = useMemo(
