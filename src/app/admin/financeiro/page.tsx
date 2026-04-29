@@ -136,7 +136,16 @@ export default function FinanceiroPage() {
   useEffect(() => {
     const bruto = parseFloat(formValor.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
     const taxa = parseFloat(formTaxaValor) || 0;
-    const liquido = calcularLiquido(bruto, taxa, formTaxaTipo);
+    
+    // Se tem bruto, calcular liquido normal
+    // Se não tem bruto mas tem taxa, mostrar a taxa como valor
+    let liquido = 0;
+    if (bruto > 0) {
+      liquido = calcularLiquido(bruto, taxa, formTaxaTipo);
+    } else if (taxa > 0) {
+      liquido = taxa;
+    }
+    
     setValorLiquidoPreview(Math.max(0, liquido));
   }, [formValor, formTaxaValor, formTaxaTipo]);
 
@@ -500,7 +509,7 @@ export default function FinanceiroPage() {
 
               {/* Valor Bruto */}
               <div>
-                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">VALOR BRUTO (R$) *</label>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">VALOR BRUTO (R$) - Opcional</label>
                 <input
                   type="text"
                   value={formValor}
@@ -508,6 +517,7 @@ export default function FinanceiroPage() {
                   placeholder="0,00"
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
                 />
+                <p className="mt-1 text-xs text-cream/30">Deixe em branco se for apenas taxa</p>
               </div>
 
               {/* Taxa/Comissão */}
@@ -533,10 +543,15 @@ export default function FinanceiroPage() {
               </div>
 
               {/* Preview Valor Líquido */}
-              {formValor && (
+              {(formValor || formTaxaValor) && (
                 <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
-                  <p className="text-xs text-cream/50">Valor Líquido Estimado:</p>
+                  <p className="text-xs text-cream/50">
+                    {formValor ? "Valor Líquido Estimado:" : "Valor da Taxa:"}
+                  </p>
                   <p className="text-lg font-bold text-emerald-400">{formatCurrency(valorLiquidoPreview)}</p>
+                  {!formValor && formTaxaValor && (
+                    <p className="text-xs text-cream/40 mt-1">(Apenas taxa, sem valor bruto)</p>
+                  )}
                 </div>
               )}
 
