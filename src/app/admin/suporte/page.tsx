@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const CATEGORIES = [
-  { value: "Duvida", label: "Duvida" },
+  { value: "Dúvida", label: "Dúvida" },
   { value: "Bug", label: "Bug" },
   { value: "Financeiro", label: "Financeiro" },
   { value: "Outros", label: "Outros" },
@@ -12,13 +12,13 @@ const CATEGORIES = [
 export default function SuportePage() {
   const [form, setForm] = useState({ title: "", category: "", description: "" });
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [message, setMessage] = useState(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     
     if (!form.title.trim() || !form.category || !form.description.trim()) {
-      setMessage({ text: "Preencha todos os campos obrigatorios", type: "error" });
+      setMessage({ text: "Preencha todos os campos obrigatórios", type: "error" });
       return;
     }
 
@@ -41,7 +41,7 @@ export default function SuportePage() {
 
       if (data.success) {
         setMessage({
-          text: "Sua solicitacao de suporte foi enviada com sucesso. Nossa equipe retornara em breve.",
+          text: "Sua solicitação de suporte foi enviada com sucesso. Nossa equipe retornará em breve.",
           type: "success",
         });
         setForm({ title: "", category: "", description: "" });
@@ -49,7 +49,7 @@ export default function SuportePage() {
         setMessage({ text: data.error || "Erro ao enviar", type: "error" });
       }
     } catch (err) {
-      setMessage({ text: "Erro de conexao", type: "error" });
+      setMessage({ text: "Erro de conexão", type: "error" });
     } finally {
       setSending(false);
       setTimeout(() => setMessage(null), 8000);
@@ -61,18 +61,16 @@ export default function SuportePage() {
       <div className="mb-6">
         <h1 className="font-title text-2xl text-cream">Suporte</h1>
         <p className="text-sm text-cream/50 mt-1">
-          Envie sua duvida, reporte um bug ou solicite ajuda. Nossa equipe respondera em breve.
+          Envie sua dúvida, reporte um bug ou solicite ajuda. Nossa equipe responderá em breve.
         </p>
       </div>
 
       {message && (
-        <div
-          className={`mb-4 rounded-lg border px-4 py-3 ${
-            message.type === "success"
-              ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
-              : "border-red-500/30 bg-red-500/20 text-red-400"
-          }`}
-        >
+        <div className={`mb-4 rounded-lg border px-4 py-3 ${
+          message.type === "success"
+            ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
+            : "border-red-500/30 bg-red-500/20 text-red-400"
+        }`}>
           {message.text}
         </div>
       )}
@@ -80,12 +78,12 @@ export default function SuportePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-            TITULO / ASSUNTO *
+            TÍTULO / ASSUNTO *
           </label>
           <input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Ex: Nao consigo alterar o cardapio"
+            placeholder="Ex: Não consigo alterar o cardápio"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
           />
         </div>
@@ -110,12 +108,12 @@ export default function SuportePage() {
 
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-            DESCRICAO DETALHADA *
+            DESCRIÇÃO DETALHADA *
           </label>
           <textarea
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Descreva seu problema com o maximo de detalhes possivel..."
+            placeholder="Descreva seu problema com o máximo de detalhes possível..."
             rows={6}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50 resize-none"
           />
@@ -127,7 +125,7 @@ export default function SuportePage() {
             disabled={sending}
             className="rounded-lg bg-amberglow/25 px-6 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
           >
-            {sending ? "Enviando..." : "Enviar Solicitacao"}
+            {sending ? "Enviando..." : "Enviar Solicitação"}
           </button>
         </div>
       </form>

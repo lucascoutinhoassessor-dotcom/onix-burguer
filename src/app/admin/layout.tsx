@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -155,7 +155,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/sugestoes",
-    label: "Sugestoes",
+    label: "Sugestões",
     exact: false,
     key: "sugestoes",
     icon: (
