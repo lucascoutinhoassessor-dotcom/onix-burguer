@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface CompanyData {
   id?: string;
@@ -27,7 +27,9 @@ export default function DadosEmpresaPage() {
   const [form, setForm] = useState<CompanyData>(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadData();
@@ -44,6 +46,47 @@ export default function DadosEmpresaPage() {
       console.error("Erro ao carregar dados:", err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    if (!file.type.startsWith("image/")) {
+      setMessage({ text: "Apenas imagens são permitidas", type: "error" });
+      return;
+    }
+
+    // Validar tamanho (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ text: "Arquivo muito grande (máx 2MB)", type: "error" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setForm(f => ({ ...f, logo_url: data.url }));
+        setMessage({ text: "Logo enviado com sucesso!", type: "success" });
+      } else {
+        setMessage({ text: data.error || "Erro ao enviar logo", type: "error" });
+      }
+    } catch (err) {
+      setMessage({ text: "Erro ao fazer upload", type: "error" });
+    } finally {
+      setUploading(false);
+      setTimeout(() => setMessage(null), 5000);
     }
   }
 
@@ -122,17 +165,45 @@ export default function DadosEmpresaPage() {
           <p className="mt-1 text-xs text-cream/30">URL personalizada do seu site</p>
         </div>
 
-        {/* Logo */}
+        {/* Logo - Upload + URL */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">LOGO DA EMPRESA</label>
-          <input
-            value={form.logo_url}
-            onChange={(e) => setForm(f => ({ ...f, logo_url: e.target.value }))}
-            placeholder="https://exemplo.com/logo.png"
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
-          />
+          
+          {/* Upload de arquivo */}
+          <div className="flex items-center gap-3 mb-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded-lg border border-dashed border-white/20 bg-white/5 px-4 py-2 text-sm text-cream/70 transition hover:border-amberglow/40 hover:text-amberglow disabled:opacity-50"
+            >
+              {uploading ? "Enviando..." : "📁 Escolher arquivo"}
+            </button>
+            <span className="text-xs text-cream/40">ou</span>
+            <input
+              value={form.logo_url}
+              onChange={(e) => setForm(f => ({ ...f, logo_url: e.target.value }))}
+              placeholder="https://exemplo.com/logo.png"
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+            />
+          </div>
+          
           {form.logo_url && (
-            <img src={form.logo_url} alt="Logo preview" className="mt-2 h-16 w-auto rounded-lg" />
+            <div className="flex items-center gap-3">
+              <img src={form.logo_url} alt="Logo preview" className="h-16 w-auto rounded-lg border border-white/10" />
+              <button
+                onClick={() => setForm(f => ({ ...f, logo_url: "" }))}
+                className="text-xs text-red-400 hover:text-red-300"
+              >
+                Remover
+              </button>
+            </div>
           )}
         </div>
 
