@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
 const CATEGORIES = [
-  { value: "DÃºvida", label: "DÃºvida" },
+  { value: "Duvida", label: "Duvida" },
   { value: "Bug", label: "Bug" },
   { value: "Financeiro", label: "Financeiro" },
   { value: "Outros", label: "Outros" },
@@ -18,7 +18,7 @@ export default function SuportePage() {
     e.preventDefault();
     
     if (!form.title.trim() || !form.category || !form.description.trim()) {
-      setMessage({ text: "Preencha todos os campos obrigatÃ³rios", type: "error" });
+      setMessage({ text: "Preencha todos os campos obrigatorios", type: "error" });
       return;
     }
 
@@ -41,7 +41,7 @@ export default function SuportePage() {
 
       if (data.success) {
         setMessage({
-          text: "Sua solicitaÃ§Ã£o de suporte foi enviada com sucesso. Nossa equipe retornarÃ¡ em breve.",
+          text: "Sua solicitacao de suporte foi enviada com sucesso. Nossa equipe retornara em breve.",
           type: "success",
         });
         setForm({ title: "", category: "", description: "" });
@@ -49,7 +49,7 @@ export default function SuportePage() {
         setMessage({ text: data.error || "Erro ao enviar", type: "error" });
       }
     } catch (err) {
-      setMessage({ text: "Erro de conexÃ£o", type: "error" });
+      setMessage({ text: "Erro de conexao", type: "error" });
     } finally {
       setSending(false);
       setTimeout(() => setMessage(null), 8000);
@@ -61,7 +61,7 @@ export default function SuportePage() {
       <div className="mb-6">
         <h1 className="font-title text-2xl text-cream">Suporte</h1>
         <p className="text-sm text-cream/50 mt-1">
-          Envie sua dÃºvida, reporte um bug ou solicite ajuda. Nossa equipe responderÃ¡ em breve.
+          Envie sua duvida, reporte um bug ou solicite ajuda. Nossa equipe respondera em breve.
         </p>
       </div>
 
@@ -80,12 +80,12 @@ export default function SuportePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-            TÃTULO / ASSUNTO *
+            TITULO / ASSUNTO *
           </label>
           <input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Ex: NÃ£o consigo alterar o cardÃ¡pio"
+            placeholder="Ex: Nao consigo alterar o cardapio"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
           />
         </div>
@@ -110,12 +110,12 @@ export default function SuportePage() {
 
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">
-            DESCRIÃ‡ÃƒO DETALHADA *
+            DESCRICAO DETALHADA *
           </label>
           <textarea
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Descreva seu problema com o mÃ¡ximo de detalhes possÃ­vel..."
+            placeholder="Descreva seu problema com o maximo de detalhes possivel..."
             rows={6}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50 resize-none"
           />
@@ -127,7 +127,7 @@ export default function SuportePage() {
             disabled={sending}
             className="rounded-lg bg-amberglow/25 px-6 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
           >
-            {sending ? "Enviando..." : "Enviar SolicitaÃ§Ã£o"}
+            {sending ? "Enviando..." : "Enviar Solicitacao"}
           </button>
         </div>
       </form>
