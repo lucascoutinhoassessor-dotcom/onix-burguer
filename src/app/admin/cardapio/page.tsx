@@ -29,6 +29,22 @@ type Category = {
   sort_order: number;
 };
 
+type MenuOption = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+type MenuOptionGroup = {
+  id: string;
+  name: string;
+  type: "single" | "multiple";
+  required: boolean;
+  minSelections: number;
+  maxSelections: number;
+  options: MenuOption[];
+};
+
 type FormState = {
   id: string;
   name: string;
@@ -38,6 +54,7 @@ type FormState = {
   image: string;
   active: boolean;
   uploadMode: "url" | "file";
+  option_groups: MenuOptionGroup[];
 };
 
 const EMPTY_FORM: FormState = {
