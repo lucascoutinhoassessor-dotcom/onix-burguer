@@ -278,8 +278,9 @@ export default function AdminCardapioPage() {
       price: String(item.price),
       category: item.category,
       image: item.image ?? "",
-      active: item.active === true ? true : false, // Garantir booleano
-      uploadMode: "url"
+      active: item.active === true ? true : false,
+      uploadMode: "url",
+      option_groups: (item.option_groups as MenuOptionGroup[] | undefined) ?? []
     });
     setEditingId(item.id);
     setShowForm(true);
