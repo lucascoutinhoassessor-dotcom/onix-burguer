@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { getDefaultSelections, useCart } from "@/components/cart-context";
 import { type MenuItem, type MenuOptionGroup } from "@/data/menu";
 
