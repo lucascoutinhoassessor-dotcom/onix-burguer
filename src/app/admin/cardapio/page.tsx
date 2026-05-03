@@ -65,7 +65,8 @@ const EMPTY_FORM: FormState = {
   category: "",
   image: "",
   active: true,
-  uploadMode: "url"
+  uploadMode: "url",
+  option_groups: []
 };
 
 function SortableItemRow({
