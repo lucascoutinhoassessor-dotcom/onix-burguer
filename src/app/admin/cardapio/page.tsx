@@ -446,7 +446,79 @@ export default function AdminCardapioPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  async function handleDragEnd(event: DragEndEvent) {
+  
+  // Funcoes de gerenciamento de complementos
+  function addOptionGroup() {
+    const newGroup: MenuOptionGroup = {
+      id: crypto.randomUUID(),
+      name: "",
+      type: "single",
+      required: false,
+      minSelections: 0,
+      maxSelections: 1,
+      options: []
+    };
+    setForm((f) => ({ ...f, option_groups: [...f.option_groups, newGroup] }));
+  }
+
+  function updateOptionGroup(groupId: string, updates: Partial<MenuOptionGroup>) {
+    setForm((f) => ({
+      ...f,
+      option_groups: f.option_groups.map((g) =>
+        g.id === groupId ? { ...g, ...updates } : g
+      )
+    }));
+  }
+
+  function removeOptionGroup(groupId: string) {
+    setForm((f) => ({
+      ...f,
+      option_groups: f.option_groups.filter((g) => g.id !== groupId)
+    }));
+  }
+
+  function addOptionItem(groupId: string) {
+    const newOption: MenuOption = {
+      id: crypto.randomUUID(),
+      name: "",
+      price: 0
+    };
+    setForm((f) => ({
+      ...f,
+      option_groups: f.option_groups.map((g) =>
+        g.id === groupId ? { ...g, options: [...g.options, newOption] } : g
+      )
+    }));
+  }
+
+  function updateOptionItem(groupId: string, optionId: string, updates: Partial<MenuOption>) {
+    setForm((f) => ({
+      ...f,
+      option_groups: f.option_groups.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              options: g.options.map((o) =>
+                o.id === optionId ? { ...o, ...updates } : o
+              )
+            }
+          : g
+      )
+    }));
+  }
+
+  function removeOptionItem(groupId: string, optionId: string) {
+    setForm((f) => ({
+      ...f,
+      option_groups: f.option_groups.map((g) =>
+        g.id === groupId
+          ? { ...g, options: g.options.filter((o) => o.id !== optionId) }
+          : g
+      )
+    }));
+  }
+
+async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
     if (!over || active.id === over.id) return;
