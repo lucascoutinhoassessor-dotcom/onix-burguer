@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     if (!name || !slug) {
       return NextResponse.json(
-        { success: false, error: "Nome e slug são obrigatórios." },
+        { success: false, error: "Nome e slug sao obrigatorios." },
         { status: 400 }
       );
     }
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "ID é obrigatório." },
+        { success: false, error: "ID e obrigatorio." },
         { status: 400 }
       );
     }
@@ -84,6 +84,39 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+// PUT /api/categories - reordenar (bulk update)
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { items } = body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Lista de itens e obrigatoria." },
+        { status: 400 }
+      );
+    }
+
+    // Atualizar cada categoria com sua nova ordem
+    for (const item of items) {
+      const { error } = await supabaseAdmin
+        .from("categories")
+        .update({ sort_order: item.sort_order })
+        .eq("id", item.id);
+
+      if (error) throw error;
+    }
+
+    return NextResponse.json({ success: true, message: "Ordem atualizada" });
+  } catch (err) {
+    console.error("PUT /api/categories error:", err);
+    return NextResponse.json(
+      { success: false, error: "Erro ao reordenar categorias." },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/categories - deletar
 export async function DELETE(request: NextRequest) {
   try {
@@ -92,7 +125,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "ID é obrigatório." },
+        { success: false, error: "ID e obrigatorio." },
         { status: 400 }
       );
     }

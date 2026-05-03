@@ -178,3 +178,35 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Erro ao remover item." }, { status: 500 });
   }
 }
+
+// PUT /api/menu - reordenar (bulk update)
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { items } = body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Lista de itens e obrigatoria." },
+        { status: 400 }
+      );
+    }
+
+    for (const item of items) {
+      const { error } = await supabaseAdmin
+        .from("menu_items")
+        .update({ sort_order: item.sort_order })
+        .eq("id", item.id);
+
+      if (error) throw error;
+    }
+
+    return NextResponse.json({ success: true, message: "Ordem atualizada" });
+  } catch (err) {
+    console.error("PUT /api/menu error:", err);
+    return NextResponse.json(
+      { success: false, error: "Erro ao reordenar itens." },
+      { status: 500 }
+    );
+  }
+}
