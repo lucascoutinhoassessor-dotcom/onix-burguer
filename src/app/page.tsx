@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { FeaturedItemsSection } from "@/components/FeaturedItemModal";
 import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
+import { useCompanyData } from "@/hooks/use-company-data";
 import { menuItems } from "@/data/menu";
 
 const reviews = [
@@ -60,9 +61,22 @@ function Currency({ value }: { value: number }) {
 }
 
 export default function Home() {
+  return <HomePageContent />;
+}
+
+function HomePageContent() {
+  const { data: company } = useCompanyData();
+
+  const companyName = company?.name || "Onix Burguer Artesanal";
+  const companyDescription = company?.description || "Hamburgueria premium de São Gonçalo com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.";
+  const companyAddress = company?.address || "";
+  const companyLogo = company?.logo_url || "";
+  const companyInstagram = company?.instagram;
+  const companyWhatsapp = company?.whatsapp;
+
   return (
     <main id="inicio" className="min-h-screen bg-hero-radial">
-      <SiteHeader />
+      <SiteHeader companyName={companyName} logoUrl={companyLogo} />
 
       {/* ── HERO ── */}
       <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-hero-radial">
@@ -102,10 +116,10 @@ export default function Home() {
 
             <div className="space-y-4 sm:space-y-6">
               <h1 className="font-title max-w-3xl text-[2.75rem] uppercase leading-[0.9] tracking-[0.06em] text-cream sm:text-6xl sm:leading-[0.88] sm:tracking-[0.08em] lg:text-[7.5rem]">
-                O sabor que transforma a sua noite em ritual.
+                {companyName}
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/80 sm:text-lg sm:leading-8 lg:text-xl">
-                Hamburgueria premium de São Gonçalo com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.
+                {companyDescription}
               </p>
             </div>
 
@@ -116,12 +130,16 @@ export default function Home() {
               >
                 Fazer pedido agora
               </Link>
-              <Link
-                href="#cardapio"
-                className="btn-premium rounded-full border border-white/20 px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm hover:border-amberglow/40 hover:text-amberglow sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
-              >
-                Ver destaques
-              </Link>
+              {companyWhatsapp && (
+                <a
+                  href={`https://wa.me/${companyWhatsapp.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-premium rounded-full border border-white/20 px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm hover:border-amberglow/40 hover:text-amberglow sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
+                >
+                  Pedir pelo WhatsApp
+                </a>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-2 sm:gap-4 sm:pt-4">

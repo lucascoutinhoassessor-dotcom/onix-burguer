@@ -13,7 +13,7 @@ const navigation = [
   { label: "Localização", href: "/#localizacao" }
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ companyName = "Onix Burguer", logoUrl = "" }: { companyName?: string; logoUrl?: string }) {
   const pathname = usePathname();
   const { itemCount, openCart } = useCart();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,11 +29,15 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-obsidian/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <Link href="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-amberglow/40 bg-gradient-to-br from-ember to-amberglow text-[10px] font-black uppercase tracking-[0.25em] text-obsidian sm:h-11 sm:w-11 sm:text-xs sm:tracking-[0.35em]">
-            ÔX
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName} className="h-9 w-9 rounded-full object-cover sm:h-11 sm:w-11" />
+          ) : (
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-amberglow/40 bg-gradient-to-br from-ember to-amberglow text-[10px] font-black uppercase tracking-[0.25em] text-obsidian sm:h-11 sm:w-11 sm:text-xs sm:tracking-[0.35em]">
+              ÔX
+            </div>
+          )}
           <div className="min-w-0">
-            <p className="truncate font-title text-lg uppercase tracking-[0.12em] text-cream sm:text-2xl sm:tracking-[0.18em]">Onix Burguer</p>
+            <p className="truncate font-title text-lg uppercase tracking-[0.12em] text-cream sm:text-2xl sm:tracking-[0.18em]">{companyName}</p>
             <p className="hidden text-[10px] uppercase tracking-[0.45em] text-amberglow/70 sm:block">Artesanal Premium</p>
           </div>
         </Link>
