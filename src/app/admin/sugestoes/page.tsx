@@ -13,7 +13,7 @@ export default function SugestoesPage() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState(null);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!form.title.trim() || !form.area || !form.description.trim()) {
