@@ -1,6 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { formatCurrency } from "@/lib/checkout";
 import type { DbMenuItem } from "@/lib/supabase";
 import { menuItems as localMenuItems } from "@/data/menu";
@@ -34,7 +51,7 @@ const EMPTY_FORM: FormState = {
   uploadMode: "url"
 };
 
-function ItemRow({
+function SortableItemRow({
   item,
   categories,
   onEdit,
@@ -48,9 +65,40 @@ function ItemRow({
   onDelete: (id: string) => void;
 }) {
   const categoryLabel = categories.find((c) => c.id === item.category)?.name ?? item.category;
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
-    <tr className="border-b border-white/5 hover:bg-white/[0.02]">
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-b border-white/5 hover:bg-white/[0.02]"
+    >
+      <td className="px-4 py-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-cream/30 hover:text-cream/60"
+          title="Arrastar para reordenar"
+        >
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor">
+            <path d="M7 2a2 2 0 1 0 .001 3.999A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 3.999A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 3.999A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-3.999A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 3.999A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 3.999A2 2 0 0 0 13 14z" />
+          </svg>
+        </button>
+      </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           {item.image && (
@@ -111,6 +159,14 @@ export default function AdminCardapioPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [reorderMessage, setReorderMessage] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   const [importing, setImporting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -390,9 +446,63 @@ export default function AdminCardapioPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filteredItems.findIndex((i) => i.id === active.id);
+    const newIndex = filteredItems.findIndex((i) => i.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newFilteredItems = arrayMove(filteredItems, oldIndex, newIndex);
+    
+    // Atualizar sort_order dos itens filtrados
+    const updatedFilteredItems = newFilteredItems.map((item, index) => ({
+      ...item,
+      sort_order: index,
+    }));
+
+    // Atualizar o estado global de items
+    const otherItems = items.filter((i) => !filteredItems.some((fi) => fi.id === i.id));
+    setItems([...otherItems, ...updatedFilteredItems]);
+
+    // Enviar atualizacao para API
+    try {
+      const itemsToUpdate = updatedFilteredItems.map((item) => ({
+        id: item.id,
+        sort_order: item.sort_order,
+      }));
+
+      const res = await fetch("/api/menu", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: itemsToUpdate }),
+      });
+
+      if (res.ok) {
+        setReorderMessage("Ordem atualizada");
+        setTimeout(() => setReorderMessage(null), 2000);
+      } else {
+        console.error("Erro ao reordenar");
+        await loadItems(); // Reverter
+      }
+    } catch (err) {
+      console.error("Reorder error:", err);
+      await loadItems(); // Reverter
+    }
+  }
+
   return (
     <div className="p-6">
       {/* Header */}
+      {reorderMessage && (
+        <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-4 py-2 text-sm text-emerald-400">
+          {reorderMessage}
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-title text-2xl tracking-wide text-cream">Cardápio</h1>
@@ -511,29 +621,41 @@ export default function AdminCardapioPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-white/8">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/8 bg-white/[0.02]">
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">ITEM</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">CATEGORIA</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">PREÇO</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">STATUS</th>
-                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">AÇÕES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  categories={categories}
-                  onEdit={openEdit}
-                  onToggle={handleToggle}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </tbody>
-          </table>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={filteredItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/8 bg-white/[0.02]">
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40 w-10"></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">ITEM</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">CATEGORIA</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">PREÇO</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">STATUS</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-cream/40">AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((item) => (
+                    <SortableItemRow
+                      key={item.id}
+                      item={item}
+                      categories={categories}
+                      onEdit={openEdit}
+                      onToggle={handleToggle}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 
