@@ -155,7 +155,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/sugestoes",
-    label: "SugestÃµes",
+    label: "Sugestoes",
     exact: false,
     key: "sugestoes",
     icon: (
