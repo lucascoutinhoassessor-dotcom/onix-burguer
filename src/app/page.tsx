@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { FeaturedItemsSection } from "@/components/FeaturedItemModal";
 import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
-import { useCompanyData } from "@/hooks/use-company-data";
+import { getCompanyData } from "@/lib/company-data";
 import { menuItems } from "@/data/menu";
 
 const reviews = [
@@ -60,12 +60,8 @@ function Currency({ value }: { value: number }) {
   );
 }
 
-export default function Home() {
-  return <HomePageContent />;
-}
-
-function HomePageContent() {
-  const { data: company } = useCompanyData();
+export default async function Home() {
+  const company = await getCompanyData();
 
   const companyName = company?.name || "Onix Burguer Artesanal";
   const companyDescription = company?.description || "Hamburgueria premium de São Gonçalo com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.";
@@ -343,7 +339,7 @@ function HomePageContent() {
       </section>
 
       <SiteFooter />
-      <WhatsAppFloatingButton />
+      {companyWhatsapp && <WhatsAppFloatingButton />}
     </main>
   );
 }
