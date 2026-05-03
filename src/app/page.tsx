@@ -339,7 +339,7 @@ export default async function Home() {
       </section>
 
       <SiteFooter />
-      {companyWhatsapp && <WhatsAppFloatingButton />}
+      <WhatsAppFloatingButton />
     </main>
   );
 }

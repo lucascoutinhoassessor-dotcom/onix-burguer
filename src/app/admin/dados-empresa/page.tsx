@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 
@@ -40,7 +40,15 @@ export default function DadosEmpresaPage() {
       const res = await fetch("/api/company");
       const data = await res.json();
       if (data.success && data.data) {
-        setForm(data.data);
+        setForm({
+          name: String(data.data.name || ""),
+          logo_url: String(data.data.logo_url || ""),
+          address: String(data.data.address || ""),
+          instagram: String(data.data.instagram || ""),
+          whatsapp: String(data.data.whatsapp || ""),
+          description: String(data.data.description || ""),
+          slug: String(data.data.slug || ""),
+        });
       }
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
@@ -53,15 +61,13 @@ export default function DadosEmpresaPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo
     if (!file.type.startsWith("image/")) {
-      setMessage({ text: "Apenas imagens são permitidas", type: "error" });
+      setMessage({ text: "Apenas imagens sÃ£o permitidas", type: "error" });
       return;
     }
 
-    // Validar tamanho (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      setMessage({ text: "Arquivo muito grande (máx 2MB)", type: "error" });
+      setMessage({ text: "Arquivo muito grande (mÃ¡x 2MB)", type: "error" });
       return;
     }
 
@@ -91,8 +97,8 @@ export default function DadosEmpresaPage() {
   }
 
   async function handleSave() {
-    if (!form.name || !form.slug) {
-      setMessage({ text: "Nome da empresa e slug são obrigatórios", type: "error" });
+    if (!form.name.trim() || !form.slug.trim()) {
+      setMessage({ text: "Nome da empresa e slug sÃ£o obrigatÃ³rios", type: "error" });
       return;
     }
 
@@ -107,15 +113,25 @@ export default function DadosEmpresaPage() {
       const data = await res.json();
       if (data.success) {
         setMessage({ text: "Dados salvos com sucesso!", type: "success" });
-        setForm(data.data);
+        if (data.data) {
+          setForm({
+            name: String(data.data.name || ""),
+            logo_url: String(data.data.logo_url || ""),
+            address: String(data.data.address || ""),
+            instagram: String(data.data.instagram || ""),
+            whatsapp: String(data.data.whatsapp || ""),
+            description: String(data.data.description || ""),
+            slug: String(data.data.slug || ""),
+          });
+        }
       } else {
         setMessage({ text: data.error || "Erro ao salvar", type: "error" });
       }
     } catch (err) {
-      setMessage({ text: "Erro de conexão", type: "error" });
+      setMessage({ text: "Erro de conexÃ£o com o servidor", type: "error" });
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage(null), 5000);
+      setTimeout(() => setMessage(null), 8000);
     }
   }
 
@@ -125,7 +141,7 @@ export default function DadosEmpresaPage() {
     <div className="p-6 pb-24 max-w-4xl">
       <div className="mb-6">
         <h1 className="font-title text-2xl text-cream">Dados da Empresa</h1>
-        <p className="text-sm text-cream/50 mt-1">Configure as informações que aparecerão no site</p>
+        <p className="text-sm text-cream/50 mt-1">Configure as informaÃ§Ãµes que aparecerÃ£o no site</p>
       </div>
 
       {message && (
@@ -139,7 +155,6 @@ export default function DadosEmpresaPage() {
       )}
 
       <div className="space-y-6">
-        {/* Nome da Empresa */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">NOME DA EMPRESA *</label>
           <input
@@ -150,7 +165,6 @@ export default function DadosEmpresaPage() {
           />
         </div>
 
-        {/* Slug/Link Personalizado */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">SLUG / LINK PERSONALIZADO *</label>
           <div className="flex items-center gap-2">
@@ -165,11 +179,9 @@ export default function DadosEmpresaPage() {
           <p className="mt-1 text-xs text-cream/30">URL personalizada do seu site</p>
         </div>
 
-        {/* Logo - Upload + URL */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">LOGO DA EMPRESA</label>
           
-          {/* Upload de arquivo */}
           <div className="flex items-center gap-3 mb-3">
             <input
               ref={fileInputRef}
@@ -183,7 +195,7 @@ export default function DadosEmpresaPage() {
               disabled={uploading}
               className="rounded-lg border border-dashed border-white/20 bg-white/5 px-4 py-2 text-sm text-cream/70 transition hover:border-amberglow/40 hover:text-amberglow disabled:opacity-50"
             >
-              {uploading ? "Enviando..." : "📁 Escolher arquivo"}
+              {uploading ? "Enviando..." : "ðŸ“ Escolher arquivo"}
             </button>
             <span className="text-xs text-cream/40">ou</span>
             <input
@@ -207,9 +219,8 @@ export default function DadosEmpresaPage() {
           )}
         </div>
 
-        {/* Endereço */}
         <div>
-          <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">ENDEREÇO DA EMPRESA</label>
+          <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">ENDEREÃ‡O DA EMPRESA</label>
           <textarea
             value={form.address}
             onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))}
@@ -219,19 +230,17 @@ export default function DadosEmpresaPage() {
           />
         </div>
 
-        {/* Descrição */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">TEXTO DESCRITIVO</label>
           <textarea
             value={form.description}
             onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Descrição da empresa que aparecerá no site..."
+            placeholder="DescriÃ§Ã£o da empresa que aparecerÃ¡ no site..."
             rows={4}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50 resize-none"
           />
         </div>
 
-        {/* Instagram */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">INSTAGRAM (opcional)</label>
           <div className="flex items-center gap-2">
@@ -245,7 +254,6 @@ export default function DadosEmpresaPage() {
           </div>
         </div>
 
-        {/* WhatsApp */}
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">WHATSAPP (opcional)</label>
           <input
