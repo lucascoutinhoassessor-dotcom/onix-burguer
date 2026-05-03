@@ -11,7 +11,7 @@ const AREAS = [
 export default function SugestoesPage() {
   const [form, setForm] = useState({ title: "", area: "", description: "" });
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

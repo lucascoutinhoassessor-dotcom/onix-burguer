@@ -12,7 +12,7 @@ const CATEGORIES = [
 export default function SuportePage() {
   const [form, setForm] = useState({ title: "", category: "", description: "" });
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
