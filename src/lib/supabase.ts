@@ -176,6 +176,7 @@ export type DbIntegration = {
   platform: string;
   api_key: string | null;
   api_secret: string | null;
+  merchant_id: string | null;
   webhook_url: string | null;
   active: boolean;
   created_at: string;

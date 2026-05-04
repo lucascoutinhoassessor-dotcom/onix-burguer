@@ -15,6 +15,7 @@ type PlatformConfig = {
   hasApiSecret: boolean;
   hasWebhook: boolean;
   docsUrl: string;
+  merchantIdLabel?: string;
 };
 
 const PLATFORMS: PlatformConfig[] = [
@@ -26,7 +27,8 @@ const PLATFORMS: PlatformConfig[] = [
     hasApiKey: true,
     hasApiSecret: true,
     hasWebhook: true,
-    docsUrl: "https://developer.ifood.com.br"
+    docsUrl: "https://developer.ifood.com.br",
+    merchantIdLabel: "Merchant ID (ID da Loja)"
   },
   {
     id: "ubereats",
@@ -36,7 +38,8 @@ const PLATFORMS: PlatformConfig[] = [
     hasApiKey: true,
     hasApiSecret: true,
     hasWebhook: false,
-    docsUrl: "https://developer.uber.com/docs/eats"
+    docsUrl: "https://developer.uber.com/docs/eats",
+    merchantIdLabel: "Store ID"
   },
   {
     id: "rappi",
@@ -44,20 +47,22 @@ const PLATFORMS: PlatformConfig[] = [
     description: "Super app de delivery",
     logo: "🛵",
     hasApiKey: true,
-    hasApiSecret: false,
+    hasApiSecret: true,
     hasWebhook: false,
-    docsUrl: "https://dev.rappi.com"
+    docsUrl: "https://dev.rappi.com",
+    merchantIdLabel: "Store ID"
   }
 ];
 
 type IntegrationForm = {
   api_key: string;
   api_secret: string;
+  merchant_id: string;
   webhook_url: string;
   active: boolean;
 };
 
-const EMPTY_FORM: IntegrationForm = { api_key: "", api_secret: "", webhook_url: "", active: false };
+const EMPTY_FORM: IntegrationForm = { api_key: "", api_secret: "", merchant_id: "", webhook_url: "", active: false };
 
 // ---------------------------------------------------------------------------
 // WhatsApp Business API config types
@@ -394,6 +399,7 @@ export default function AdminIntegracoesPage() {
     setForm({
       api_key: existing?.api_key ?? "",
       api_secret: existing?.api_secret ?? "",
+      merchant_id: existing?.merchant_id ?? "",
       webhook_url: existing?.webhook_url ?? "",
       active: existing?.active ?? false
     });
@@ -578,10 +584,10 @@ export default function AdminIntegracoesPage() {
       </div>
 
       <div className="mt-8 rounded-xl border border-white/8 bg-white/[0.02] p-5">
-        <h3 className="mb-3 font-semibold text-cream">Gatilho: Saiu para Entrega → Motoboy</h3>
+        <h3 className="mb-3 font-semibold text-cream">Gatilho: Pronto → Chamado de Coleta</h3>
         <p className="text-sm text-cream/50">
-          Quando um pedido atingir o status <span className="rounded bg-purple-500/10 px-1 text-xs text-purple-400">Saiu para entrega</span>,
-          o sistema registrará automaticamente um disparo de WhatsApp para os motoboys ativos cadastrados em Colaboradores.
+          Quando um pedido atingir o status <span className="rounded bg-emerald-500/10 px-1 text-xs text-emerald-400">Pronto</span>,
+          o sistema enviará automaticamente uma mensagem em background (via integração WhatsApp) para os motoboys ativos virem buscar o pedido, sem necessidade de interação manual ou abertura de janelas.
         </p>
       </div>
     </div>
