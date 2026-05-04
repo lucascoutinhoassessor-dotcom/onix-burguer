@@ -884,6 +884,118 @@ async function handleDragEnd(event: DragEndEvent) {
               </div>
             </div>
 
+            {/* Complementos e Adicionais */}
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-title text-lg text-cream">Complementos e Adicionais</h3>
+                <button
+                  type="button"
+                  onClick={addOptionGroup}
+                  className="rounded-lg bg-amberglow/20 px-3 py-1.5 text-xs font-medium text-amberglow transition hover:bg-amberglow/30"
+                >
+                  + Novo Grupo
+                </button>
+              </div>
+
+              {form.option_groups.length === 0 && (
+                <p className="text-sm text-cream/40">Nenhum grupo de opcoes cadastrado.</p>
+              )}
+
+              <div className="space-y-4">
+                {form.option_groups.map((group) => (
+                  <div key={group.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <input
+                        value={group.name}
+                        onChange={(e) => updateOptionGroup(group.id, { name: e.target.value })}
+                        placeholder="Nome do grupo (ex: Ponto da carne)"
+                        className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeOptionGroup(group.id)}
+                        className="ml-2 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                      >
+                        Excluir Grupo
+                      </button>
+                    </div>
+
+                    <div className="mb-3 grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-cream/50">Tipo</label>
+                        <select
+                          value={group.type}
+                          onChange={(e) => updateOptionGroup(group.id, { type: e.target.value as "single" | "multiple" })}
+                          className="w-full rounded border border-white/10 bg-coal px-2 py-1 text-xs text-cream"
+                        >
+                          <option value="single">Unica escolha</option>
+                          <option value="multiple">Multipla escolha</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-cream/50">Obrigatorio</label>
+                        <select
+                          value={group.required ? "true" : "false"}
+                          onChange={(e) => updateOptionGroup(group.id, { required: e.target.value === "true" })}
+                          className="w-full rounded border border-white/10 bg-coal px-2 py-1 text-xs text-cream"
+                        >
+                          <option value="false">Nao</option>
+                          <option value="true">Sim</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-cream/50">Max. escolhas</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={group.maxSelections}
+                          onChange={(e) => updateOptionGroup(group.id, { maxSelections: parseInt(e.target.value) || 1 })}
+                          className="w-full rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-cream"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {group.options.map((option) => (
+                        <div key={option.id} className="flex items-center gap-2">
+                          <input
+                            value={option.name}
+                            onChange={(e) => updateOptionItem(group.id, option.id, { name: e.target.value })}
+                            placeholder="Nome do item"
+                            className="flex-1 rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={option.price}
+                            onChange={(e) => updateOptionItem(group.id, option.id, { price: parseFloat(e.target.value) || 0 })}
+                            placeholder="Preco"
+                            className="w-24 rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-cream"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeOptionItem(group.id, option.id)}
+                            className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => addOptionItem(group.id)}
+                      className="mt-2 rounded-lg border border-dashed border-white/20 px-3 py-1 text-xs text-cream/50 transition hover:border-amberglow/40 hover:text-amberglow"
+                    >
+                      + Adicionar Item
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowForm(false)}
