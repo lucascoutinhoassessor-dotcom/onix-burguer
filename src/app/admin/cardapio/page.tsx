@@ -894,6 +894,7 @@ async function handleDragEnd(event: DragEndEvent) {
                 )}
               </div>
             </div>
+          </div>
 
             {/* Complementos e Adicionais */}
             <div className="mt-6 border-t border-white/10 pt-6">
