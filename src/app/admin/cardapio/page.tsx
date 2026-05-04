@@ -753,10 +753,21 @@ async function handleDragEnd(event: DragEndEvent) {
       {/* Create/Edit modal */}
       {showForm && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-coal p-6 shadow-2xl">
-            <h2 className="mb-5 font-title text-xl text-cream">{editingId ? "Editar Item" : "Novo Item"}</h2>
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-white/10 bg-coal shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 p-6">
+              <h2 className="font-title text-xl text-cream">{editingId ? "Editar Item" : "Novo Item"}</h2>
+              <button
+                onClick={() => setShowForm(false)}
+                className="rounded-lg p-2 text-cream/40 transition hover:bg-white/5 hover:text-cream"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">ID *</label>
@@ -996,20 +1007,22 @@ async function handleDragEnd(event: DragEndEvent) {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowForm(false)}
-                className="rounded-lg px-4 py-2 text-sm text-cream/50 transition hover:bg-white/5"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !form.id || !form.name || !form.price}
-                className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
-              >
-                {saving ? "Salvando..." : "Salvar"}
-              </button>
+            <div className="border-t border-white/10 p-6">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="rounded-lg px-4 py-2 text-sm text-cream/50 transition hover:bg-white/5"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !form.id || !form.name || !form.price}
+                  className="rounded-lg bg-amberglow/25 px-4 py-2 text-sm font-medium text-amberglow transition hover:bg-amberglow/35 disabled:opacity-50"
+                >
+                  {saving ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
