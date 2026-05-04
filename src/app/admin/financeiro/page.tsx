@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatCurrency } from "@/lib/checkout";
+import { useSimulacao } from "@/contexts/simulacao-context";
 
 // Tipo estendido com taxa
 type Lancamento = {
@@ -16,7 +17,8 @@ type Lancamento = {
   status: "Pago" | "Pendente" | "A Receber";
   tipo: "Entrada" | "Saída";
   taxaValor?: number;
-  taxaTipo?: "%" | "R$";
+  recorrente?: boolean;
+  mesesRecorrencia?: number;
 };
 
 // Função de cálculo de liquido com taxa
@@ -38,12 +40,15 @@ function calcularTaxaReversa(taxa: number, tipo: "%" | "R$"): number {
 
 // Mock data para simulação
 const mockLancamentos: Lancamento[] = [
-  { id: "1", data: "2025-01-20", descricao: "Venda #1234", categoria: "Venda", canal: "iFood", metodoPagamento: "iFood", valorBruto: 150, valorLiquido: calcularLiquido(150, 12, "%"), status: "A Receber", tipo: "Entrada", taxaValor: 12, taxaTipo: "%" },
-  { id: "2", data: "2025-01-20", descricao: "Venda #1235", categoria: "Venda", canal: "Balcão", metodoPagamento: "Pix", valorBruto: 89.90, valorLiquido: 89.90, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
-  { id: "3", data: "2025-01-20", descricao: "Embalagens Delivery", categoria: "Embalagens", canal: "Outros", metodoPagamento: "Pix", valorBruto: 250, valorLiquido: 250, status: "Pago", tipo: "Saída" },
-  { id: "4", data: "2025-01-21", descricao: "Venda #1236", categoria: "Venda", canal: "WhatsApp", metodoPagamento: "Dinheiro", valorBruto: 45.00, valorLiquido: 45.00, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
-  { id: "5", data: "2025-01-21", descricao: "Insumos - Carne", categoria: "Insumos", canal: "Outros", metodoPagamento: "Pix", valorBruto: 350, valorLiquido: 350, status: "Pendente", tipo: "Saída" },
-  { id: "6", data: "2025-01-21", descricao: "Taxa iFood", categoria: "Taxas Apps", canal: "iFood", metodoPagamento: "iFood", valorBruto: 18, valorLiquido: 18, status: "Pago", tipo: "Saída" },
+  { id: "1", data: "2025-01-20", descricao: "Venda #1234", categoria: "Venda Delivery", canal: "iFood", metodoPagamento: "Cartão de Crédito", valorBruto: 150, valorLiquido: calcularLiquido(150, 12, "%"), status: "A Receber", tipo: "Entrada", taxaValor: 12, taxaTipo: "%" },
+  { id: "2", data: "2025-01-20", descricao: "Venda #1235", categoria: "Venda Salão", canal: "Balcão", metodoPagamento: "PIX", valorBruto: 89.90, valorLiquido: 89.90, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
+  { id: "3", data: "2025-01-20", descricao: "Embalagens Delivery", categoria: "Embalagens", canal: "Outros", metodoPagamento: "Boleto", valorBruto: 250, valorLiquido: 250, status: "Pago", tipo: "Saída" },
+  { id: "4", data: "2025-01-21", descricao: "Venda #1236", categoria: "Venda Salão", canal: "WhatsApp", metodoPagamento: "Dinheiro", valorBruto: 45.00, valorLiquido: 45.00, status: "Pago", tipo: "Entrada", taxaValor: 0, taxaTipo: "%" },
+  { id: "5", data: "2025-01-21", descricao: "Insumos - Carne", categoria: "Insumos", canal: "Outros", metodoPagamento: "PIX", valorBruto: 350, valorLiquido: 350, status: "Pendente", tipo: "Saída" },
+  { id: "6", data: "2025-01-21", descricao: "Taxa iFood", categoria: "Taxas de Apps", canal: "iFood", metodoPagamento: "Cartão de Débito", valorBruto: 18, valorLiquido: 18, status: "Pago", tipo: "Saída" },
+  { id: "7", data: "2025-01-22", descricao: "Folha - Cozinheiro", categoria: "Folha de Pagamento", canal: "Outros", metodoPagamento: "PIX", valorBruto: 2200, valorLiquido: 2200, status: "Pago", tipo: "Saída", recorrente: true, mesesRecorrencia: 12 },
+  { id: "8", data: "2025-01-22", descricao: "Evento - Festa Junina", categoria: "Evento", canal: "WhatsApp", metodoPagamento: "PIX", valorBruto: 1200, valorLiquido: 1200, status: "A Receber", tipo: "Entrada" },
+  { id: "9", data: "2025-01-22", descricao: "Aluguel", categoria: "Custos Fixos", canal: "Outros", metodoPagamento: "Boleto", valorBruto: 3500, valorLiquido: 3500, status: "Pago", tipo: "Saída", recorrente: true, mesesRecorrencia: 12 },
 ];
 
 // Componente Card de Métrica
@@ -109,9 +114,10 @@ function SimpleChart({ data }: { data: { label: string; value: number; color: st
 
 // Componente Principal
 export default function FinanceiroPage() {
-  const [modoSimulacao, setModoSimulacao] = useState(false);
+  const { modoSimulacao } = useSimulacao();
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [realData, setRealData] = useState<Lancamento[]>([]);
+  const [simData, setSimData] = useState<Lancamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroData, setFiltroData] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
@@ -126,6 +132,9 @@ export default function FinanceiroPage() {
   const [formValor, setFormValor] = useState("");
   const [formDataVencimento, setFormDataVencimento] = useState("");
   const [formStatus, setFormStatus] = useState<"Pago" | "Pendente">("Pendente");
+  const [formMetodoPagamento, setFormMetodoPagamento] = useState("PIX");
+  const [formRecorrente, setFormRecorrente] = useState(false);
+  const [formMesesRecorrencia, setFormMesesRecorrencia] = useState("1");
   
   // Taxa state
   const [formTaxaValor, setFormTaxaValor] = useState("");
@@ -149,19 +158,19 @@ export default function FinanceiroPage() {
     setValorLiquidoPreview(Math.max(0, liquido));
   }, [formValor, formTaxaValor, formTaxaTipo]);
 
-  // Carregar dados
+  // Carregar dados - separacao real vs simulado
   useEffect(() => {
     setLoading(true);
     if (modoSimulacao) {
       setTimeout(() => {
-        setLancamentos(mockLancamentos);
+        setLancamentos([...mockLancamentos, ...simData]);
         setLoading(false);
       }, 300);
     } else {
       setLancamentos(realData);
       setLoading(false);
     }
-  }, [modoSimulacao, realData]);
+  }, [modoSimulacao, realData, simData]);
 
   // Métricas calculadas
   const metricas = useMemo(() => {
@@ -226,18 +235,24 @@ export default function FinanceiroPage() {
       descricao: formDescricao,
       categoria: formCategoria as any,
       canal: "Outros",
-      metodoPagamento: "Pix",
+      metodoPagamento: formMetodoPagamento,
       valorBruto: valorFinal,
       valorLiquido: Math.max(0, liquido),
       status: formStatus,
       tipo: formTipo,
       taxaValor: taxa > 0 ? taxa : undefined,
       taxaTipo: taxa > 0 ? formTaxaTipo : undefined,
+      recorrente: formRecorrente,
+      mesesRecorrencia: formRecorrente ? parseInt(formMesesRecorrencia) || 1 : undefined,
     };
 
     setSaving(true);
     setTimeout(() => {
-      setRealData(prev => [novoLancamento, ...prev]);
+      if (modoSimulacao) {
+        setSimData(prev => [novoLancamento, ...prev]);
+      } else {
+        setRealData(prev => [novoLancamento, ...prev]);
+      }
       setShowForm(false);
       resetForm();
       setSaving(false);
@@ -254,6 +269,9 @@ export default function FinanceiroPage() {
     setFormTaxaValor("");
     setFormTaxaTipo("%");
     setValorLiquidoPreview(0);
+    setFormMetodoPagamento("PIX");
+    setFormRecorrente(false);
+    setFormMesesRecorrencia("1");
   };
 
   // Exportações
@@ -488,7 +506,7 @@ export default function FinanceiroPage() {
                 />
               </div>
 
-              {/* Categoria */}
+              {/* Categoria Dinamica */}
               <div>
                 <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">CATEGORIA *</label>
                 <select
@@ -497,13 +515,37 @@ export default function FinanceiroPage() {
                   className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
                 >
                   <option value="" className="bg-zinc-900 text-white">Selecione...</option>
-                  <option value="Insumos" className="bg-zinc-900 text-white">Insumos</option>
-                  <option value="Embalagens" className="bg-zinc-900 text-white">Embalagens</option>
-                  <option value="Custos Fixos" className="bg-zinc-900 text-white">Custos Fixos</option>
-                  <option value="Custos Variáveis" className="bg-zinc-900 text-white">Custos Variáveis</option>
-                  <option value="Taxas Apps" className="bg-zinc-900 text-white">Taxas Apps</option>
-                  <option value="Folha de Pagamento" className="bg-zinc-900 text-white">Folha de Pagamento</option>
-                  <option value="Venda" className="bg-zinc-900 text-white">Venda</option>
+                  {formTipo === "Entrada" ? (
+                    <>
+                      <option value="Venda Delivery" className="bg-zinc-900 text-white">Venda Delivery</option>
+                      <option value="Venda Salão" className="bg-zinc-900 text-white">Venda Salão</option>
+                      <option value="Evento" className="bg-zinc-900 text-white">Evento</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="Insumos" className="bg-zinc-900 text-white">Insumos</option>
+                      <option value="Embalagens" className="bg-zinc-900 text-white">Embalagens</option>
+                      <option value="Custos Fixos" className="bg-zinc-900 text-white">Custos Fixos</option>
+                      <option value="Taxas de Apps" className="bg-zinc-900 text-white">Taxas de Apps</option>
+                      <option value="Folha de Pagamento" className="bg-zinc-900 text-white">Folha de Pagamento</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* Forma de Pagamento */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">FORMA DE PAGAMENTO *</label>
+                <select
+                  value={formMetodoPagamento}
+                  onChange={(e) => setFormMetodoPagamento(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
+                >
+                  <option value="PIX" className="bg-zinc-900 text-white">PIX</option>
+                  <option value="Cartão de Crédito" className="bg-zinc-900 text-white">Cartão de Crédito</option>
+                  <option value="Cartão de Débito" className="bg-zinc-900 text-white">Cartão de Débito</option>
+                  <option value="Dinheiro" className="bg-zinc-900 text-white">Dinheiro</option>
+                  <option value="Boleto" className="bg-zinc-900 text-white">Boleto</option>
                 </select>
               </div>
 
@@ -564,6 +606,45 @@ export default function FinanceiroPage() {
                   onChange={(e) => setFormDataVencimento(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amberglow/50"
                 />
+              </div>
+
+              {/* Lançamento Recorrente */}
+              <div className="flex items-center gap-3">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formRecorrente}
+                    onChange={(e) => setFormRecorrente(e.target.checked)}
+                    className="rounded border-white/30"
+                  />
+                  <span className="text-sm text-cream/70">Lançamento Recorrente</span>
+                </label>
+                {formRecorrente && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="24"
+                      value={formMesesRecorrencia}
+                      onChange={(e) => setFormMesesRecorrencia(e.target.value)}
+                      className="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-sm text-cream outline-none focus:border-amberglow/50"
+                    />
+                    <span className="text-xs text-cream/50">meses</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Anexar Comprovante */}
+              <div>
+                <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">ANEXAR COMPROVANTE</label>
+                <div className="flex items-center justify-center rounded-lg border border-dashed border-white/20 bg-white/[0.02] px-4 py-6 transition hover:border-amberglow/40 hover:bg-white/[0.04]">
+                  <div className="text-center">
+                    <svg className="mx-auto h-8 w-8 text-cream/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5a2.25 2.25 0 01-2.25 2.25H5.25a2.25 2.25 0 01-2.25-2.25z" />
+                    </svg>
+                    <p className="mt-2 text-xs text-cream/40">Clique ou arraste o comprovante aqui</p>
+                  </div>
+                </div>
               </div>
 
               {/* Status */}
