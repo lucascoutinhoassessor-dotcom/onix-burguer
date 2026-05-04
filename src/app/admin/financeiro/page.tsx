@@ -17,6 +17,7 @@ type Lancamento = {
   status: "Pago" | "Pendente" | "A Receber";
   tipo: "Entrada" | "Saída";
   taxaValor?: number;
+  taxaTipo?: "%" | "R$";
   recorrente?: boolean;
   mesesRecorrencia?: number;
 };

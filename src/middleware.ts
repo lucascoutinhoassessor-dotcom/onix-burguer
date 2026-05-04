@@ -17,6 +17,9 @@ const ROUTE_PERMISSION_MAP: { prefix: string; key: string }[] = [
   { prefix: "/admin/colaboradores", key: "colaboradores" },
   { prefix: "/admin/integracoes",   key: "integracoes" },
   { prefix: "/admin/clientes",      key: "clientes" },
+  { prefix: "/admin/suporte",       key: "suporte" },
+  { prefix: "/admin/sugestoes",     key: "sugestoes" },
+  { prefix: "/admin/dados-empresa", key: "dados-empresa" },
   // Root dashboard — always allowed if logged in
 ];
 
