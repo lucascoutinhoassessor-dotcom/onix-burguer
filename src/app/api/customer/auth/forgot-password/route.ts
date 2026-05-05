@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
   // Build WhatsApp message
   const whatsappMessage = [
-    `*Onix Burguer* - Recuperação de senha`,
+    `*Hamburgueria Modelo* - Recuperação de senha`,
     ``,
     `Olá, ${customer.name.split(" ")[0]}!`,
     ``,

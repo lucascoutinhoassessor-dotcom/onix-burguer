@@ -35,13 +35,13 @@ export function ConfirmationClient() {
   const [autoShareMessage, setAutoShareMessage] = useState("");
 
   useEffect(() => {
-    const raw = window.localStorage.getItem("onix-burguer-last-order");
+    const raw = window.localStorage.getItem("hamburgueria-modelo-last-order");
 
     if (raw) {
       try {
         setOrder(JSON.parse(raw) as ConfirmationData);
       } catch {
-        window.localStorage.removeItem("onix-burguer-last-order");
+        window.localStorage.removeItem("hamburgueria-modelo-last-order");
       }
     }
   }, []);
@@ -90,7 +90,7 @@ export function ConfirmationClient() {
               pixQrCodeBase64: payload.pixQrCodeBase64 ?? current.pixQrCodeBase64
             };
 
-            window.localStorage.setItem("onix-burguer-last-order", JSON.stringify(updated));
+            window.localStorage.setItem("hamburgueria-modelo-last-order", JSON.stringify(updated));
             return updated;
           });
         }
@@ -125,7 +125,7 @@ export function ConfirmationClient() {
       return;
     }
 
-    const storageKey = `onix-burguer-whatsapp-order-${order.orderId}`;
+    const storageKey = `hamburgueria-modelo-whatsapp-order-${order.orderId}`;
 
     if (window.sessionStorage.getItem(storageKey)) {
       return;

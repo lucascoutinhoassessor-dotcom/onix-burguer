@@ -132,7 +132,7 @@ export function splitName(name: string) {
 
   return {
     firstName,
-    lastName: rest.join(" ") || "Onix"
+    lastName: rest.join(" ") || "Modelo"
   };
 }
 

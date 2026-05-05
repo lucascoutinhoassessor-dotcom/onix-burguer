@@ -6,7 +6,7 @@ export function WhatsAppFloatingButton() {
       href={getRestaurantWhatsAppUrl()}
       target="_blank"
       rel="noreferrer"
-      aria-label="Abrir WhatsApp da Onix Burguer"
+      aria-label="Abrir WhatsApp da Hamburgueria"
       className="fixed bottom-5 right-5 z-[90] inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(37,211,102,0.35)] transition hover:scale-105 hover:bg-[#20bd5c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:bottom-6 sm:right-6"
     >
       <svg viewBox="0 0 32 32" aria-hidden="true" className="h-8 w-8 fill-current">

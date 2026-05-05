@@ -40,12 +40,14 @@ function OrderCard({
   order, 
   column, 
   onMove, 
-  onDespachar 
+  onDespachar,
+  onCancel
 }: { 
   order: DbOrder; 
   column: KanbanColumn;
   onMove: (orderId: string, newStatus: OrderStatus) => void;
   onDespachar?: (order: DbOrder) => void;
+  onCancel?: (orderId: string) => void;
 }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const itemsText = items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ");
@@ -55,6 +57,12 @@ function OrderCard({
       onDespachar(order);
     } else if (column.nextStatus) {
       onMove(order.id, column.nextStatus);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel && confirm("Cancelar este pedido?")) {
+      onCancel(order.id);
     }
   };
 
@@ -116,19 +124,29 @@ function OrderCard({
         </span>
       </div>
 
-      {/* Botão de Ação */}
-      {column.buttonLabel && (
-        <button
-          onClick={handleAction}
-          className={`w-full rounded-lg py-2 text-xs font-semibold uppercase tracking-wider transition ${
-            column.id === "ready"
-              ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
-              : "bg-amberglow/20 text-amberglow hover:bg-amberglow/30 border border-amberglow/30"
-          }`}
-        >
-          {column.buttonLabel}
-        </button>
-      )}
+      {/* Botões de Ação */}
+      <div className="space-y-2">
+        {column.buttonLabel && (
+          <button
+            onClick={handleAction}
+            className={`w-full rounded-lg py-2 text-xs font-semibold uppercase tracking-wider transition ${
+              column.id === "ready"
+                ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
+                : "bg-amberglow/20 text-amberglow hover:bg-amberglow/30 border border-amberglow/30"
+            }`}
+          >
+            {column.buttonLabel}
+          </button>
+        )}
+        {onCancel && column.id !== "delivered" && (
+          <button
+            onClick={handleCancel}
+            className="w-full rounded-lg py-2 text-xs font-semibold uppercase tracking-wider transition bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -140,12 +158,14 @@ function KanbanColumn({
   column, 
   orders, 
   onMove, 
-  onDespachar 
+  onDespachar,
+  onCancel
 }: { 
   column: KanbanColumn; 
   orders: DbOrder[];
   onMove: (orderId: string, newStatus: OrderStatus) => void;
   onDespachar?: (order: DbOrder) => void;
+  onCancel?: (orderId: string) => void;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -171,6 +191,7 @@ function KanbanColumn({
               column={column}
               onMove={onMove}
               onDespachar={onDespachar}
+              onCancel={onCancel}
             />
           ))
         )}
@@ -187,8 +208,14 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [motoboys, setMotoboys] = useState<Motoboy[]>([]);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showAllOrders, setShowAllOrders] = useState(false);
 
   const [creatingTestOrder, setCreatingTestOrder] = useState(false);
+
+  // Calcular timestamp de 24 horas atrás
+  const twentyFourHoursAgo = useCallback(() => {
+    return new Date(Date.now() - 24 * 60 * 60 * 1000);
+  }, []);
 
   // Buscar pedidos
   const loadOrders = useCallback(async () => {
@@ -245,7 +272,7 @@ export default function AdminDashboardPage() {
     // BroadcastChannel para sincronização entre abas
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
-      bc = new BroadcastChannel("onix-orders-sync");
+      bc = new BroadcastChannel("hamburgueria-orders-sync");
       bc.onmessage = (event) => {
         if (event.data.type === "ORDER_UPDATED") {
           console.log("[Dashboard] Recebido update de outra aba, recarregando...");
@@ -276,13 +303,41 @@ export default function AdminDashboardPage() {
         
         // Notificar outras abas
         if (typeof BroadcastChannel !== "undefined") {
-          const bc = new BroadcastChannel("onix-orders-sync");
+          const bc = new BroadcastChannel("hamburgueria-orders-sync");
           bc.postMessage({ type: "ORDER_UPDATED" });
           bc.close();
         }
       }
     } catch (err) {
       console.error("Erro ao mover pedido:", err);
+    }
+  };
+
+  // Cancelar pedido
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: orderId, status: "cancelled" }),
+      });
+
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        setNotification({ message: "Pedido cancelado com sucesso!", type: "success" });
+        setTimeout(() => setNotification(null), 5000);
+        
+        // Notificar outras abas
+        if (typeof BroadcastChannel !== "undefined") {
+          const bc = new BroadcastChannel("hamburgueria-orders-sync");
+          bc.postMessage({ type: "ORDER_UPDATED" });
+          bc.close();
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao cancelar pedido:", err);
+      setNotification({ message: "Erro ao cancelar pedido.", type: "error" });
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -302,7 +357,7 @@ export default function AdminDashboardPage() {
       ? order.items.map((i: any) => `${i.quantity}x ${i.name}`).join("%0A")
       : "Itens não disponíveis";
 
-    const message = `*NOVO PEDIDO - ONIX BURGUER*%0A%0A` +
+    const message = `*NOVO PEDIDO - HAMBURGUERIA MODELO*%0A%0A` +
       `*Pedido:* ${order.order_id}%0A` +
       `*Cliente:* ${order.customer_name}%0A` +
       `*Endereço:* ${order.customer_address || order.customer_neighborhood || "Não informado"}%0A` +
@@ -327,10 +382,19 @@ export default function AdminDashboardPage() {
     await handleMoveOrder(order.id, "saiu_para_entrega");
   };
 
-  // Agrupar pedidos por status
+  // Filtrar pedidos das últimas 24h (ou todos se showAllOrders = true)
+  const filteredOrders = showAllOrders 
+    ? orders 
+    : orders.filter((o) => {
+        const orderDate = new Date(o.created_at);
+        return orderDate >= twentyFourHoursAgo();
+      });
+
+  // Agrupar pedidos por status (excluindo cancelados)
   const ordersByColumn = KANBAN_COLUMNS.map((col) => ({
     ...col,
-    orders: orders.filter((o) => {
+    orders: filteredOrders.filter((o) => {
+      if (o.status === "cancelled") return false;
       if (col.id === "pending") return o.status === "pending" || o.status === "confirmed";
       return o.status === col.id;
     }),
@@ -338,11 +402,11 @@ export default function AdminDashboardPage() {
 
   // Estatísticas
   const stats = {
-    total: orders.length,
-    novos: orders.filter((o) => o.status === "pending").length,
-    preparo: orders.filter((o) => o.status === "preparing").length,
-    prontos: orders.filter((o) => o.status === "ready").length,
-    entregues: orders.filter((o) => o.status === "delivered").length,
+    total: filteredOrders.length,
+    novos: filteredOrders.filter((o) => o.status === "pending").length,
+    preparo: filteredOrders.filter((o) => o.status === "preparing").length,
+    prontos: filteredOrders.filter((o) => o.status === "ready").length,
+    entregues: filteredOrders.filter((o) => o.status === "delivered").length,
   };
 
   if (loading) {
@@ -370,9 +434,22 @@ export default function AdminDashboardPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-title text-2xl tracking-wide text-cream">Dashboard</h1>
-          <p className="text-sm text-cream/40">{stats.total} pedidos no sistema</p>
+          <p className="text-sm text-cream/40">
+            {stats.total} pedidos {showAllOrders ? "no sistema" : "nas últimas 24h"}
+            {!showAllOrders && (
+              <span className="ml-2 rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+                Últimas 24h
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowAllOrders(!showAllOrders)}
+            className="rounded-lg border border-white/8 px-4 py-2 text-xs text-cream/50 transition hover:border-amberglow/30 hover:text-amberglow"
+          >
+            {showAllOrders ? "🕐 Mostrar 24h" : "📋 Mostrar Todos"}
+          </button>
           <button
             onClick={createTestOrder}
             disabled={creatingTestOrder}
@@ -418,6 +495,7 @@ export default function AdminDashboardPage() {
               orders={column.orders}
               onMove={handleMoveOrder}
               onDespachar={column.id === "ready" ? enviarDadosParaMotoboy : undefined}
+              onCancel={handleCancelOrder}
             />
           </div>
         ))}

@@ -8,7 +8,7 @@ const TEST_NAMES = [
 
 const TEST_ITEMS = [
   [
-    { name: "Onix Smash", quantity: 1, unitPrice: 32.9 },
+    { name: "Smash Burguer", quantity: 1, unitPrice: 32.9 },
     { name: "Batata Frita M", quantity: 1, unitPrice: 14.9 }
   ],
   [

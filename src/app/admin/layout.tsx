@@ -332,9 +332,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const newOrderCount = pendingOrders.length;
 
   // Toca a campainha SEMPRE que o popup aparece (exceto na tela de login)
+  // E repete a cada 30 segundos enquanto o popup estiver ativo
   useEffect(() => {
     if (showPopup && pendingOrders.length > 0 && !isLoginPage) {
       playDoorbell();
+      
+      // Loop sonoro a cada 30 segundos
+      const soundInterval = setInterval(() => {
+        playDoorbell();
+      }, 30000);
+      
+      return () => clearInterval(soundInterval);
     }
   }, [showPopup, pendingOrders.length, isLoginPage]);
 

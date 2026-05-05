@@ -13,7 +13,7 @@ const navigation = [
   { label: "Localização", href: "/#localizacao" }
 ];
 
-export function SiteHeader({ companyName = "Onix Burguer", logoUrl = "" }: { companyName?: string; logoUrl?: string }) {
+export function SiteHeader({ companyName = "Hamburgueria Modelo", logoUrl = "" }: { companyName?: string; logoUrl?: string }) {
   const pathname = usePathname();
   const { itemCount, openCart } = useCart();
   const [isLoggedIn, setIsLoggedIn] = useState(false);

@@ -160,7 +160,7 @@ export default function DadosEmpresaPage() {
           <input
             value={form.name}
             onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Onix Burguer Artesanal"
+            placeholder="Hamburgueria Modelo"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
           />
         </div>
@@ -168,7 +168,7 @@ export default function DadosEmpresaPage() {
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">SLUG / LINK PERSONALIZADO *</label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-cream/40">onix-burguer.vercel.app/</span>
+            <span className="text-sm text-cream/40">hamburgueria-modelo.vercel.app/</span>
             <input
               value={form.slug}
               onChange={(e) => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))}

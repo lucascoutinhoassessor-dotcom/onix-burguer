@@ -19,9 +19,9 @@ export function SiteFooter() {
     <footer className="border-t border-white/10 bg-[#050505]">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-8">
         <div className="space-y-4">
-          <p className="font-title text-3xl uppercase tracking-[0.14em] text-cream">Onix Burguer Artesanal</p>
+          <p className="font-title text-3xl uppercase tracking-[0.14em] text-cream">Hamburgueria Modelo</p>
           <p className="max-w-md text-sm leading-7 text-white/60">
-            Hambúrgueres premium preparados com blend artesanal, ingredientes selecionados e uma experiência acolhedora em São Gonçalo.
+            Hambúrgueres premium preparados com blend artesanal, ingredientes selecionados e uma experiência acolhedora.
           </p>
         </div>
 

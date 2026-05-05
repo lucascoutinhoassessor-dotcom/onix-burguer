@@ -52,7 +52,7 @@ type StoredCartState = {
   deliveryAddress: string;
 };
 
-const STORAGE_KEY = "onix-burguer-cart";
+const STORAGE_KEY = "hamburgueria-modelo-cart";
 
 const CartContext = createContext<CartContextValue | null>(null);
 

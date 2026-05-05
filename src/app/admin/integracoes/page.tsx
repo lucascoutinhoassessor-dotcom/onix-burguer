@@ -235,7 +235,7 @@ function WhatsAppBusinessPanel() {
           <ol className="list-decimal ml-4 space-y-1.5">
             <li>Acesse <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-amberglow underline">developers.facebook.com</a> e faça login com sua conta Meta.</li>
             <li>Clique em <strong className="text-cream/80">Meus Apps</strong> → <strong className="text-cream/80">Criar App</strong>.</li>
-            <li>Selecione o tipo <strong className="text-cream/80">Business</strong> e dê um nome ao app (ex: Onix Burguer).</li>
+            <li>Selecione o tipo <strong className="text-cream/80">Business</strong> e dê um nome ao app (ex: Hamburgueria Modelo).</li>
             <li>No painel do app, vá em <strong className="text-cream/80">Adicionar Produto</strong> e clique em <strong className="text-cream/80">Configurar</strong> no WhatsApp.</li>
             <li>Em <strong className="text-cream/80">API de Configuração</strong>, copie o <strong className="text-cream/80">Phone Number ID</strong> e o <strong className="text-cream/80">Token de Acesso Temporário</strong> (ou gere um permanente via <a href="https://developers.facebook.com/docs/whatsapp/business-management-api/get-started" target="_blank" rel="noopener noreferrer" className="text-amberglow underline">System User</a>).</li>
             <li>Em <strong className="text-cream/80">WhatsApp → Configuração</strong>, copie o <strong className="text-cream/80">ID da Conta Comercial</strong> (Business Account ID).</li>

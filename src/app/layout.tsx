@@ -17,9 +17,9 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "Onix Burguer Artesanal | Hamburgueria Premium em São Gonçalo",
+  title: "Hamburgueria Modelo | Sistema de Pedidos Online",
   description:
-    "Landing page oficial da Onix Burguer Artesanal com cardápio premium, avaliações, localização e pedido via WhatsApp."
+    "Sistema de pedidos online para hamburguerias com cardápio digital, pagamento integrado e gestão de delivery."
 };
 
 export const viewport: Viewport = {

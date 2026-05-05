@@ -34,7 +34,7 @@ function buildWhatsAppCustomerMessage(order: DbOrder, newStatus: OrderStatus): s
   };
 
   const message = [
-    `🍔 *ONIX BURGUER - Atualização do Pedido*`,
+    `🍔 *HAMBURGUERIA MODELO - Atualização do Pedido*`,
     ``,
     `Olá, ${order.customer_name.split(" ")[0]}!`,
     ``,
@@ -206,7 +206,7 @@ export default function AdminPedidosPage() {
     // BroadcastChannel para sincronização entre abas
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
-      bc = new BroadcastChannel("onix-orders-sync");
+      bc = new BroadcastChannel("hamburgueria-orders-sync");
       bc.onmessage = (event) => {
         if (event.data.type === "ORDER_UPDATED") {
           console.log("[Pedidos] Recebido update de outra aba, recarregando...");

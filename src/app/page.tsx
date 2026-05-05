@@ -40,7 +40,7 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
     <div className="max-w-2xl space-y-4">
-      <SectionEyebrow>Onix Burguer Artesanal</SectionEyebrow>
+      <SectionEyebrow>Hamburgueria Modelo</SectionEyebrow>
       <h2 className="font-title text-4xl uppercase leading-none tracking-[0.1em] text-cream sm:text-5xl">
         {title}
       </h2>
@@ -63,8 +63,8 @@ function Currency({ value }: { value: number }) {
 export default async function Home() {
   const company = await getCompanyData();
 
-  const companyName = company?.name || "Onix Burguer Artesanal";
-  const companyDescription = company?.description || "Hamburgueria premium de São Gonçalo com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.";
+  const companyName = company?.name || "Hamburgueria Modelo";
+  const companyDescription = company?.description || "Hamburgueria premium com blend artesanal, atmosfera intimista e finalização impecável em cada pedido.";
   const companyAddress = company?.address || "";
   const companyLogo = company?.logo_url || "";
   const companyInstagram = company?.instagram;
@@ -163,7 +163,7 @@ export default async function Home() {
         <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <SectionTitle
             title="Artesanal de verdade, do fogo ao acabamento."
-            description="A Onix Burguer Artesanal nasce para entregar hambúrgueres com identidade, técnica e presença. Cada receita foi pensada para equilibrar suculência, crocância e profundidade de sabor em um ambiente acolhedor dentro do Colubandê Mall."
+            description="A Hamburgueria Modelo nasce para entregar hambúrgueres com identidade, técnica e presença. Cada receita foi pensada para equilibrar suculência, crocância e profundidade de sabor em um ambiente acolhedor."
           />
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -242,7 +242,7 @@ export default async function Home() {
           <div className="space-y-5">
             <SectionTitle
               title="Avaliações que reforçam cada detalhe."
-              description="Reconhecimento real de quem viveu a experiência Onix Burguer Artesanal no salão e no delivery."
+              description="Reconhecimento real de quem viveu a experiência Hamburgueria Modelo no salão e no delivery."
             />
             <div className="rounded-[2rem] border border-amberglow/20 bg-amberglow/10 p-6">
               <p className="font-title text-6xl uppercase tracking-[0.08em] text-cream">5.0</p>
@@ -268,7 +268,7 @@ export default async function Home() {
       <section id="localizacao" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
-            <SectionEyebrow>Visite a Onix</SectionEyebrow>
+            <SectionEyebrow>Visite a Hamburgueria</SectionEyebrow>
             <h2 className="mt-4 font-title text-5xl uppercase leading-none tracking-[0.1em] text-cream">
               Onde a experiência começa.
             </h2>

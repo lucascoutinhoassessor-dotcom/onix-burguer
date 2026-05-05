@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { DbOrder, OrderStatus } from "@/lib/supabase";
 
-const CHANNEL_NAME = "onix-admin-notifications";
-const SOUNDED_KEY = "onix_soundedOrders";
+const CHANNEL_NAME = "hamburgueria-admin-notifications";
+const SOUNDED_KEY = "hamburgueria_soundedOrders";
 const POLL_INTERVAL_MS = 60_000;
 const DISMISS_RECHECK_MS = 30_000;
 

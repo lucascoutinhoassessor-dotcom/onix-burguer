@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         <div class="container">
           <div class="header">
             <h2 style="margin:0;">${typeLabel}</h2>
-            <p style="margin:5px 0 0 0; opacity:0.8;">Painel Administrativo - Onix Burguer</p>
+            <p style="margin:5px 0 0 0; opacity:0.8;">Painel Administrativo - Hamburgueria Modelo</p>
           </div>
           <div class="content">
             <div class="field">
@@ -137,7 +137,7 @@ Data/Hora: ${new Date().toLocaleString("pt-BR")}
     }
 
     await transporter.sendMail({
-      from: `"Painel Onix Burguer" <${process.env.SMTP_USER}>`,
+      from: `"Painel Hamburgueria Modelo" <${process.env.SMTP_USER}>`,
       to: destinationEmail,
       subject,
       text: textContent,

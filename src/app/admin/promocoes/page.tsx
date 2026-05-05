@@ -610,7 +610,7 @@ export default function AdminPromocoesPage() {
                   value={campaignForm.message}
                   onChange={(e) => setCampaignForm((f) => ({ ...f, message: e.target.value }))}
                   rows={5}
-                  placeholder="🍔 Olá! Temos novidades especiais na Onix Burguer para você..."
+                  placeholder="🍔 Olá! Temos novidades especiais na Hamburgueria Modelo para você..."
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-green-500/50"
                 />
                 <p className="mt-1 text-xs text-cream/30">{campaignForm.message.length} caracteres</p>

@@ -226,7 +226,7 @@ export default function LoginClientePage() {
         <div className="mb-5 text-center sm:mb-8">
           <Link href="/" className="inline-block">
             <p className="font-title text-2xl uppercase tracking-[0.3em] text-amberglow drop-shadow-lg sm:text-3xl">
-              Onix Burguer
+              Hamburgueria Modelo
             </p>
           </Link>
           <p className="mt-1 text-xs font-medium uppercase tracking-[0.3em] text-white/50">

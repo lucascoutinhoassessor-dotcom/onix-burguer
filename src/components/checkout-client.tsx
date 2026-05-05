@@ -330,7 +330,7 @@ export function CheckoutClient() {
   }
 
   function saveConfirmation(data: ConfirmationData) {
-    window.localStorage.setItem("onix-burguer-last-order", JSON.stringify(data));
+    window.localStorage.setItem("hamburgueria-modelo-last-order", JSON.stringify(data));
   }
 
   async function submitPix() {
