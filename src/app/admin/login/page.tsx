@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
               <path d="M3 6h18v2H3V6zm0 4h18v2H3v-2zm0 4h12v2H3v-2z" />
             </svg>
           </div>
-          <h1 className="font-title text-3xl tracking-widest text-cream">ONIX ADMIN</h1>
+          <h1 className="font-title text-3xl tracking-widest text-cream">MODELO ADMIN</h1>
           <p className="mt-1 text-xs tracking-wider text-cream/40">Painel Administrativo</p>
         </div>
 
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@onixburguer.com.br"
+              placeholder="admin@modelohamburguer.com.br"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-cream placeholder-cream/25 outline-none transition focus:border-amberglow/50 focus:ring-1 focus:ring-amberglow/30"
             />
           </div>

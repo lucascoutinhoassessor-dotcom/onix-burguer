@@ -475,7 +475,7 @@ export default function AdminPromocoesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">CÓDIGO CUPOM</label>
-                  <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="EX: ONIX10" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50" />
+                  <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="EX: MODELO10" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium tracking-wider text-cream/50">PEDIDO MÍNIMO (R$)</label>

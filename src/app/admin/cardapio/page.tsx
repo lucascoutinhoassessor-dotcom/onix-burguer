@@ -263,7 +263,7 @@ export default function AdminCardapioPage() {
   function openCreate() {
     setForm({
       ...EMPTY_FORM,
-      category: categories[0]?.slug ?? ""
+      category: categories[0]?.id ?? ""
     });
     setEditingId(null);
     setShowForm(true);
@@ -339,13 +339,15 @@ export default function AdminCardapioPage() {
 
   async function handleToggle(item: DbMenuItem) {
     console.log("[handleToggle] Called for item:", item.id, "| current active:", item.active);
-    console.log("[handleToggle] Full item data:", JSON.stringify(item, null, 2));
+
+    // Atualização otimista no estado local
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, active: !i.active } : i))
+    );
 
     try {
       const newActiveState = !item.active;
       const body = { id: item.id, active: newActiveState };
-      console.log("[handleToggle] New active state will be:", newActiveState);
-      console.log("[handleToggle] Sending PATCH request with body:", JSON.stringify(body, null, 2));
 
       const res = await fetch("/api/menu", {
         method: "PATCH",
@@ -353,12 +355,8 @@ export default function AdminCardapioPage() {
         body: JSON.stringify(body)
       });
 
-      console.log("[handleToggle] Response status:", res.status);
-      console.log("[handleToggle] Response headers:", JSON.stringify(Object.fromEntries(res.headers.entries())));
-
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("[handleToggle] ERROR - Response not OK:", res.status, errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -366,34 +364,24 @@ export default function AdminCardapioPage() {
           errorData = { error: errorText || "Erro desconhecido" };
         }
         alert("Erro ao alterar status: " + (errorData.error || "Erro desconhecido"));
+        // Reverter otimista em caso de erro
+        await loadItems();
         return;
       }
 
-      const responseText = await res.text();
-      console.log("[handleToggle] Raw response text:", responseText);
-
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-        console.log("[handleToggle] Parsed response data:", JSON.stringify(responseData, null, 2));
-      } catch (e) {
-        console.error("[handleToggle] ERROR parsing JSON response:", e);
-        alert("Erro ao processar resposta do servidor");
-        return;
-      }
-
+      const responseData = await res.json().catch(() => ({ success: true }));
       if (!responseData.success) {
-        console.error("[handleToggle] ERROR - API returned success: false:", responseData.error);
         alert("Erro ao alterar status: " + (responseData.error || "Erro desconhecido"));
+        await loadItems();
         return;
       }
 
-      console.log("[handleToggle] API call successful, reloading items...");
+      // Sincronizar com servidor após sucesso
       await loadItems();
-      console.log("[handleToggle] Items reloaded successfully");
     } catch (err) {
       console.error("[handleToggle] Unhandled error:", err);
       alert("Erro de conexão ao alterar status.");
+      await loadItems();
     }
   }
 
@@ -777,7 +765,7 @@ async function handleDragEnd(event: DragEndEvent) {
                   >
                     {categories.length === 0 && <option value="">Carregando...</option>}
                     {categories.map((c) => (
-                      <option key={c.id} value={c.slug}>
+                      <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}

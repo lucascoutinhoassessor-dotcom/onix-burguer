@@ -246,7 +246,7 @@ export default function AdminPedidosPage() {
       
       // Notificar outras abas
       if (typeof BroadcastChannel !== "undefined") {
-        const bc = new BroadcastChannel("onix-orders-sync");
+        const bc = new BroadcastChannel("modelo-orders-sync");
         bc.postMessage({ type: "ORDER_UPDATED" });
         bc.close();
       }

@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "onix-admin-secret");
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "modelo-admin-secret");
       const { payload } = await jwtVerify(token, secret);
       const jwtPayload = payload as JwtPayload;
       const role = jwtPayload.role ?? "owner";

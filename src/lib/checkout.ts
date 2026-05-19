@@ -181,7 +181,7 @@ export function buildWhatsAppOrderMessage(order: ConfirmationData) {
   }
 
   return [
-    "🍔 *NOVO PEDIDO - ONIX BURGUER*",
+    "🍔 *NOVO PEDIDO - MODELO HAMBURGUER*",
     "",
     `Número do pedido: ${order.orderId}`,
     `ID da transação: ${order.paymentId}`,

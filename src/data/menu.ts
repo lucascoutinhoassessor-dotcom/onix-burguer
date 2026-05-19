@@ -28,8 +28,8 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
   {
-    id: "onix-prime",
-    name: "Ônix Prime",
+    id: "modelo-prime",
+    name: "Modelo Prime",
     description: "Pão brioche, blend artesanal 180g, queijo cheddar inglês, bacon caramelizado e maionese defumada.",
     price: 38,
     category: "hamburgueres",
@@ -279,8 +279,8 @@ export const menuItems: MenuItem[] = [
     ]
   },
   {
-    id: "batata-frita-onix",
-    name: "Batata Frita Ônix",
+    id: "batata-frita-modelo",
+    name: "Batata Frita Modelo",
     description: "Batatas crocantes com páprica defumada, sal de ervas e maionese da casa.",
     price: 18,
     category: "acompanhamentos",
@@ -497,5 +497,5 @@ export const menuItems: MenuItem[] = [
 ];
 
 export const featuredItems = menuItems.filter((item) =>
-  ["onix-prime", "black-truffle-burger", "gold-bbq", "bourbon-bacon-jam"].includes(item.id)
+  ["modelo-prime", "black-truffle-burger", "gold-bbq", "bourbon-bacon-jam"].includes(item.id)
 );

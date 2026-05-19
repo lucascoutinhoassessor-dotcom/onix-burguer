@@ -156,7 +156,7 @@ export async function PATCH(request: NextRequest) {
         if (statusDetail) {
           const firstName = String(data.customer_name).split(" ")[0];
           const message = [
-            `🍔 *ONIX BURGUER - Atualização do Pedido*`,
+            `🍔 *MODELO HAMBURGUER - Atualização do Pedido*`,
             ``,
             `Olá, ${firstName}!`,
             ``,

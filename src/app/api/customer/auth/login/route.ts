@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "onix-customer-secret";
+const JWT_SECRET = process.env.JWT_SECRET ?? "modelo-customer-secret";
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as Record<string, unknown>;

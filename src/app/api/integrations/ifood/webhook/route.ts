@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       if (order && motoboys && motoboys.length > 0) {
         // Build WhatsApp message for motoboy (server-side — just log; client opens WA)
         const message = [
-          `🛵 *NOVO PEDIDO PARA ENTREGA — ONIX BURGUER*`,
+          `🛵 *NOVO PEDIDO PARA ENTREGA — MODELO HAMBURGUER*`,
           ``,
           `Pedido: #${order.order_id}`,
           `Cliente: ${order.customer_name}`,

@@ -385,10 +385,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Brand */}
             <div className="flex h-14 items-center gap-3 border-b border-white/8 px-4">
               <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-amberglow/20">
-                <span className="font-title text-sm text-amberglow">O</span>
+                <span className="font-title text-sm text-amberglow">M</span>
               </div>
               {!collapsed && (
-                <span className="font-title text-base tracking-widest text-cream/90">ONIX</span>
+                <span className="font-title text-base tracking-widest text-cream/90">MODELO</span>
               )}
             </div>
 

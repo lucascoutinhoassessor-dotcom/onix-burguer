@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "onix-admin-secret");
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "modelo-admin-secret");
 
     // 1. Try admin_users (legacy, full owner access)
     const { data: adminUser, error: adminError } = await supabaseAdmin
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // 2. Try employees table (role-based + per-employee permissions)
     const { data: employee, error: employeeError } = await supabaseAdmin
       .from("employees")
-      .select("id, email, name, password_hash, role, active, permissions")
+      .select("id, email, name, password_hash, role, active")
       .eq("email", normalizedEmail)
       .single();
 
@@ -86,10 +86,7 @@ export async function POST(request: NextRequest) {
       role: employee.role
     };
 
-    // Include custom permissions if set
-    if (employee.permissions && Array.isArray(employee.permissions) && employee.permissions.length > 0) {
-      jwtPayload.permissions = employee.permissions;
-    }
+    // permissions removido do select até migration no banco
 
     const token = await new SignJWT(jwtPayload)
       .setProtectedHeader({ alg: "HS256" })

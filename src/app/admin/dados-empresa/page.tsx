@@ -248,7 +248,7 @@ export default function DadosEmpresaPage() {
             <input
               value={form.instagram}
               onChange={(e) => setForm(f => ({ ...f, instagram: e.target.value.replace("@", "") }))}
-              placeholder="onixburguer"
+              placeholder="modelohamburguer"
               className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder-cream/25 outline-none focus:border-amberglow/50"
             />
           </div>

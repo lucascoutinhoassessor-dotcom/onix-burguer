@@ -32,8 +32,8 @@ export function SiteHeader({ companyName = "Hamburgueria Modelo", logoUrl = "" }
           {logoUrl ? (
             <img src={logoUrl} alt={companyName} className="h-9 w-9 rounded-full object-cover sm:h-11 sm:w-11" />
           ) : (
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-amberglow/40 bg-gradient-to-br from-ember to-amberglow text-[10px] font-black uppercase tracking-[0.25em] text-obsidian sm:h-11 sm:w-11 sm:text-xs sm:tracking-[0.35em]">
-              ÔX
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-amberglow/40 bg-gradient-to-br from-ember to-amberglow text-[10px] font-black uppercase tracking-[0.15em] text-obsidian sm:h-11 sm:w-11 sm:text-xs sm:tracking-[0.2em]">
+              MD
             </div>
           )}
           <div className="min-w-0">

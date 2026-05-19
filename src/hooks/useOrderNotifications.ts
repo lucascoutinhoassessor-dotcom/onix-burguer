@@ -113,6 +113,18 @@ export function useOrderNotifications(enabled = true) {
     }
   }, []);
 
+  // --- Visibility change: recheck when tab returns to foreground ---
+  useEffect(() => {
+    if (!enabled) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        checkPendingOrders();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [enabled, checkPendingOrders]);
+
   // --- Supabase Realtime – instant notification on INSERT ---
   useEffect(() => {
     if (!enabled) return;

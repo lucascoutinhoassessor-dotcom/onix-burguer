@@ -242,8 +242,7 @@ export default function AdminColaboradoresPage() {
         cpf: form.cpf || null,
         phone: form.role === "motoboy" ? (form.phone || null) : null,
         cnh: form.role === "motoboy" ? (form.cnh || null) : null,
-        document_photo_url: form.role === "motoboy" ? (form.document_photo_url || null) : null,
-        permissions: form.useCustomPermissions ? (form.permissions ?? null) : null
+        document_photo_url: form.role === "motoboy" ? (form.document_photo_url || null) : null
       };
       if (form.password) body.password = form.password;
 
@@ -597,6 +596,9 @@ export default function AdminColaboradoresPage() {
                   onTogglePerm={handleTogglePerm}
                 />
               )}
+              <p className="text-xs text-cream/30">
+                As permissões são aplicadas apenas visualmente. O controle de acesso por aba será habilitado em breve.
+              </p>
 
               {error && (
                 <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">

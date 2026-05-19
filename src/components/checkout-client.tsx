@@ -168,7 +168,7 @@ export function CheckoutClient() {
           amount: total.toFixed(2),
           iframe: true,
           form: {
-            id: "onix-card-form",
+            id: "modelo-card-form",
             cardNumber: { id: "form-checkout__cardNumber", placeholder: "Número do cartão" },
             expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
             securityCode: { id: "form-checkout__securityCode", placeholder: "CVV" },
@@ -468,7 +468,7 @@ export function CheckoutClient() {
   return (
     <section className="mx-auto grid max-w-7xl gap-6 px-3 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-14">
       <form
-        id="onix-card-form"
+        id="modelo-card-form"
         onSubmit={handleSubmit}
         className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 shadow-amber sm:space-y-6 sm:p-8"
       >

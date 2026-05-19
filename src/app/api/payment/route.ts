@@ -47,7 +47,7 @@ function sanitizeDigits(value: string) {
 }
 
 function getOrderId() {
-  return `ONIX-${Date.now()}`;
+  return `MDL-${Date.now()}`;
 }
 
 function buildDescription(items: CartItem[]) {
