@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import bcrypt from "bcryptjs";
+
+// Hash simples para evitar problemas com bcrypt no Edge Runtime
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(16);
+}
 
 // POST /api/admin/setup — cria admins padrão
 export async function POST(request: NextRequest) {
@@ -14,7 +24,7 @@ export async function POST(request: NextRequest) {
     const errors: Array<{ email: string; error: string }> = [];
 
     for (const admin of admins) {
-      const passwordHash = await bcrypt.hash(admin.password, 12);
+      const passwordHash = simpleHash(admin.password);
 
       // Criar em employees
       const { data: empData, error: empError } = await supabaseAdmin
