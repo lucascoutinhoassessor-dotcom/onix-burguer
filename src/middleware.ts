@@ -31,7 +31,7 @@ const OWNER_ROUTES = ["/admin/integracoes"];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login" && pathname !== "/admin/setup") {
     const token = request.cookies.get("admin-token")?.value;
 
     if (!token) {

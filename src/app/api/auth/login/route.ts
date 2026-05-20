@@ -19,14 +19,13 @@ export async function POST(request: NextRequest) {
       .from("admin_users")
       .select("id, email, password_hash")
       .eq("email", normalizedEmail)
-      .single();
+      .maybeSingle();
 
-    if (adminError && adminError.code !== "PGRST116") {
-      // PGRST116 = row not found — expected when user is not in admin_users
+    if (adminError) {
       console.error("[login] admin_users query error:", adminError);
     }
 
-    if (adminUser) {
+    if (adminUser?.password_hash) {
       const valid = await bcrypt.compare(password, adminUser.password_hash);
       if (!valid) {
         console.warn("[login] admin_users: invalid password for", normalizedEmail);
@@ -59,14 +58,14 @@ export async function POST(request: NextRequest) {
       .from("employees")
       .select("id, email, name, password_hash, role, active")
       .eq("email", normalizedEmail)
-      .single();
+      .maybeSingle();
 
-    if (employeeError && employeeError.code !== "PGRST116") {
+    if (employeeError) {
       console.error("[login] employees query error:", employeeError);
     }
 
-    if (!employee) {
-      console.warn("[login] user not found in admin_users or employees:", normalizedEmail);
+    if (!employee?.password_hash) {
+      console.warn("[login] user not found:", normalizedEmail);
       return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
     }
 

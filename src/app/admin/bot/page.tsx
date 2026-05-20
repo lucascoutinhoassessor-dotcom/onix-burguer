@@ -126,10 +126,26 @@ export default function BotAdminPage() {
     setLoading(true);
     setConnectionStatus("loading_qr");
     try {
-      await fetch("/api/admin/bot/connect", { method: "POST" });
-      await checkStatus();
+      const res = await fetch("/api/admin/bot/status?action=connect", { method: "POST" });
+      const data = await res.json();
+      
+      if (data.error) {
+        setConnectionStatus("error");
+        alert("Erro: " + data.error);
+        return;
+      }
+      
+      if (data.qrCodeBase64) {
+        setQrCodeBase64(data.qrCodeBase64);
+        setConnectionStatus("awaiting_scan");
+      } else if (data.state === "connected") {
+        setConnectionStatus("connected");
+      } else {
+        setConnectionStatus("error");
+      }
     } catch (e) {
       setConnectionStatus("error");
+      alert("Erro de conexão com a API");
     } finally {
       setLoading(false);
     }
@@ -138,8 +154,9 @@ export default function BotAdminPage() {
   async function handleDisconnect() {
     if (!confirm("Tem certeza que deseja desconectar o WhatsApp?")) return;
     try {
-      await fetch("/api/admin/bot/disconnect", { method: "POST" });
+      await fetch("/api/admin/bot/status?action=disconnect", { method: "POST" });
       setConnectionStatus("disconnected");
+      setQrCodeBase64(null);
       setSettings((prev) => ({ ...prev, active: false }));
     } catch (e) {
       alert("Erro ao desconectar");
@@ -226,7 +243,9 @@ export default function BotAdminPage() {
                   </div>
                   <h4 className="mb-1 text-sm font-medium text-cream">Vincular Dispositivo</h4>
                   <p className="mb-5 px-4 text-xs text-white/50">
-                    Gere um QR Code para conectar o bot ao seu WhatsApp de forma segura.
+                    {connectionStatus === "error" 
+                      ? "Erro ao conectar. Verifique se a Evolution API está configurada."
+                      : "Gere um QR Code para conectar o bot ao seu WhatsApp de forma segura."}
                   </p>
                   <button
                     onClick={handleConnect}

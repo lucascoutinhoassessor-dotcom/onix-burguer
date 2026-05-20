@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
-// POST /api/bot/webhook — recebe mensagens do WhatsApp
+const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "";
+const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "";
+
+// POST /api/bot/webhook — recebe mensagens da Evolution API
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, message, name } = body;
+    
+    // Evolution API envia dados no formato:
+    // { data: { key: { remoteJid: "..." }, message: { conversation: "..." } } }
+    const phone = body.data?.key?.remoteJid?.replace(/@s\.whatsapp\.net/, "");
+    const messageText = body.data?.message?.conversation || 
+                       body.data?.message?.extendedTextMessage?.text || 
+                       "";
 
-    if (!phone || !message) {
-      return NextResponse.json({ error: "phone e message são obrigatórios" }, { status: 400 });
+    if (!phone || !messageText) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
     // Buscar configurações do bot
@@ -33,86 +42,95 @@ export async function POST(request: NextRequest) {
     if (!customerId) {
       const { data: newCustomer } = await supabaseAdmin
         .from("customers")
-        .insert({ phone, name: name || "Cliente WhatsApp" })
+        .insert({ phone, name: "Cliente WhatsApp" })
         .select("id")
         .single();
       customerId = newCustomer?.id;
     }
 
-    // Salvar mensagem no histórico
+    // Salvar mensagem recebida
     await supabaseAdmin.from("bot_conversations").insert({
       customer_id: customerId,
       phone,
-      message,
-      direction: "incoming",
-      created_at: new Date().toISOString()
+      message: messageText,
+      direction: "incoming"
     });
 
-    // Processar com IA (em produção, integrar com OpenAI/Gemini)
-    const reply = await generateReply(message, botConfig, customerId);
+    // Gerar resposta
+    const reply = await generateReply(messageText, botConfig);
+
+    // Enviar resposta via Evolution API
+    await sendMessage(phone, reply);
 
     // Salvar resposta
     await supabaseAdmin.from("bot_conversations").insert({
       customer_id: customerId,
       phone,
       message: reply,
-      direction: "outgoing",
-      created_at: new Date().toISOString()
+      direction: "outgoing"
     });
 
-    return NextResponse.json({
-      success: true,
-      reply,
-      customerId
-    });
+    return NextResponse.json({ success: true, reply });
   } catch (err) {
     console.error("[bot/webhook] error:", err);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 
-// GET /api/bot/webhook — health check
-export async function GET() {
-  return NextResponse.json({ status: "ok", service: "bot-webhook" });
+async function sendMessage(phone: string, text: string) {
+  if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) return;
+
+  try {
+    await fetch(`${EVOLUTION_API_URL}/message/sendText/modelo-bot`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": EVOLUTION_API_KEY
+      },
+      body: JSON.stringify({
+        number: phone,
+        text
+      })
+    });
+  } catch (err) {
+    console.error("[sendMessage] error:", err);
+  }
 }
 
 async function generateReply(
   message: string,
-  botConfig: Record<string, unknown>,
-  customerId?: string
+  botConfig: Record<string, any>
 ): Promise<string> {
   const lowerMsg = message.toLowerCase();
 
-  // Respostas simples baseadas em palavras-chave (em produção, usar IA real)
   if (lowerMsg.includes("cardápio") || lowerMsg.includes("menu") || lowerMsg.includes("o que tem")) {
     return await getMenuReply();
   }
 
   if (lowerMsg.includes("pedido") || lowerMsg.includes("quer") || lowerMsg.includes("quero")) {
-    return `Perfeito! Para fazer seu pedido, você pode:\n\n1. Acesse nosso site: https://onix-burguer.vercel.app/cardapio\n2. Ou me diga o que deseja que eu anoto! 📝`;
+    return `Perfeito! Para fazer seu pedido, acesse:\n\nhttps://onix-burguer.vercel.app/cardapio\n\nOu me diga o que deseja que eu anoto! 📝`;
   }
 
   if (lowerMsg.includes("horário") || lowerMsg.includes("abre") || lowerMsg.includes("fecha")) {
-    return `Nosso horário de funcionamento:\n\n🕕 Todos os dias: 18h às 23h\n\nFechamos às terças-feiras.`;
+    return `🕕 Nosso horário:\n\nTodos os dias: 18h às 23h\nFechamos às terças-feiras.`;
   }
 
   if (lowerMsg.includes("endereço") || lowerMsg.includes("onde") || lowerMsg.includes("local")) {
-    return `📍 Estamos localizados em:\n\nAv. José Mendonça de Campos, 955 - Loja 07\nColubandê, São Gonçalo - RJ\n\nhttps://maps.google.com/?q=Av.+José+Mendonça+de+Campos,955`;
+    return `📍 Av. José Mendonça de Campos, 955 - Loja 07\nColubandê, São Gonçalo - RJ`;
   }
 
   if (lowerMsg.includes("entrega") || lowerMsg.includes("delivery")) {
-    return `🛵 Fazemos entrega!\n\nTaxa de entrega: a partir de R$ 5,00\nTempo médio: 30-45 minutos\n\nVocê pode pedir pelo site ou me dizer seu endereço!`;
+    return `🛵 Fazemos entrega!\n\nTaxa: a partir de R$ 5,00\nTempo médio: 30-45 minutos`;
   }
 
   if (lowerMsg.includes("pagamento") || lowerMsg.includes("pagar")) {
-    return `💳 Formas de pagamento:\n\n• Cartão de crédito/débito\n• Pix\n• Dinheiro (na entrega)\n\nNo site aceitamos cartão e Pix!`;
+    return `💳 Aceitamos:\n• Cartão de crédito/débito\n• Pix\n• Dinheiro (na entrega)`;
   }
 
-  // Resposta padrão/boas-vindas
-  const welcome = botConfig.welcomeMessage as string;
+  const welcome = botConfig.welcome_message;
   if (welcome) return welcome;
 
-  return `Olá! Sou o assistente virtual da Hamburgueria Modelo! 🍔\n\nPosso ajudar você com:\n• 📋 Cardápio\n• 🛒 Fazer pedidos\n• ❓ Dúvidas\n• 📍 Endereço e horários\n\nO que você precisa hoje?`;
+  return `Olá! Sou o assistente virtual da Hamburgueria Modelo! 🍔\n\nPosso ajudar com:\n• 📋 Cardápio\n• 🛒 Pedidos\n• ❓ Dúvidas\n• 📍 Endereço e horários\n\nO que você precisa?`;
 }
 
 async function getMenuReply(): Promise<string> {
@@ -123,36 +141,34 @@ async function getMenuReply(): Promise<string> {
       .eq("active", true)
       .order("category");
 
-    if (!items || items.length === 0) {
-      return `Nosso cardápio está sendo atualizado! 🍔\n\nAcesse o site para ver as novidades: https://onix-burguer.vercel.app/cardapio`;
+    if (!items?.length) {
+      return `Cardápio em atualização! 🍔\nAcesse: https://onix-burguer.vercel.app/cardapio`;
     }
 
-    // Agrupar por categoria
     const byCategory = items.reduce<Record<string, typeof items>>((acc, item) => {
       if (!acc[item.category]) acc[item.category] = [];
       acc[item.category].push(item);
       return acc;
     }, {});
 
-    let reply = "*🍔 CARDÁPIO HAMBURGUERIA MODELO*\n\n";
-    const categoryLabels: Record<string, string> = {
-      hamburgueres: "🍔 *Hambúrgueres*",
-      acompanhamentos: "🍟 *Acompanhamentos*",
-      bebidas: "🥤 *Bebidas*",
-      sobremesas: "🍰 *Sobremesas*"
+    let reply = "*🍔 CARDÁPIO HAMBURGUERIA MODELO*\n";
+    const labels: Record<string, string> = {
+      hamburgueres: "🍔 Hambúrgueres",
+      acompanhamentos: "🍟 Acompanhamentos",
+      bebidas: "🥤 Bebidas",
+      sobremesas: "🍰 Sobremesas"
     };
 
     for (const [cat, catItems] of Object.entries(byCategory)) {
-      reply += `${categoryLabels[cat] || cat}\n`;
+      reply += `\n${labels[cat] || cat}:\n`;
       for (const item of catItems) {
         reply += `• ${item.name} — R$ ${item.price.toFixed(2)}\n`;
       }
-      reply += "\n";
     }
 
-    reply += "\n💬 Para pedir, diga *'quero [item]'* ou acesse:\nhttps://onix-burguer.vercel.app/cardapio";
+    reply += "\n💬 Para pedir, diga 'quero [item]'";
     return reply;
   } catch (e) {
-    return `Desculpe, não consegui carregar o cardápio agora. 😕\n\nAcesse nosso site: https://onix-burguer.vercel.app/cardapio`;
+    return `Desculpe, não consegui carregar o cardápio. 😕`;
   }
 }
